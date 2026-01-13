@@ -1,6 +1,172 @@
-@MMLib.DummyApi_HostAddress = http://localhost:5229
+@MMLib.DummyApi_HostAddress = http://localhost:5000
+@ApiKey = test-api-key-123
 
-GET {{MMLib.DummyApi_HostAddress}}/weatherforecast/
+### Products - Get All
+GET {{MMLib.DummyApi_HostAddress}}/products
 Accept: application/json
 
-###
+### Products - Get All with Filtering
+GET {{MMLib.DummyApi_HostAddress}}/products?category=Electronics&minPrice=100
+Accept: application/json
+
+### Products - Get By ID
+GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Products - Create
+POST {{MMLib.DummyApi_HostAddress}}/products
+Content-Type: application/json
+
+{
+  "name": "Test Product",
+  "description": "A test product",
+  "price": 99.99,
+  "stockQuantity": 50,
+  "category": "Electronics"
+}
+
+### Products - Create with Background Delay Override
+POST {{MMLib.DummyApi_HostAddress}}/products
+Content-Type: application/json
+X-Background-Delay: 5000
+
+{
+  "name": "Product with Custom Delay",
+  "description": "Background job will complete in 5 seconds",
+  "price": 199.99,
+  "stockQuantity": 25,
+  "category": "Electronics"
+}
+
+### Products - Update
+PUT {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "name": "Updated Product",
+  "price": 149.99,
+  "stockQuantity": 30
+}
+
+### Products - Delete
+DELETE {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+
+### Products - Get Status
+GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001/status
+Accept: application/json
+
+### Orders - Get All (Requires Auth)
+GET {{MMLib.DummyApi_HostAddress}}/orders
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+### Orders - Get By ID (Requires Auth)
+GET {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+### Orders - Create (Requires Auth)
+POST {{MMLib.DummyApi_HostAddress}}/orders
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+
+{
+  "productIds": [
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002"
+  ],
+  "totalAmount": 299.99
+}
+
+### Orders - Create with Background Delay (Requires Auth)
+POST {{MMLib.DummyApi_HostAddress}}/orders
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+X-Background-Delay: 3000
+
+{
+  "productIds": [
+    "00000000-0000-0000-0000-000000000001"
+  ],
+  "totalAmount": 199.99
+}
+
+### Orders - Update (Requires Auth)
+PUT {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+
+{
+  "totalAmount": 349.99
+}
+
+### Orders - Delete (Requires Auth)
+DELETE {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
+X-Api-Key: {{ApiKey}}
+
+### Orders - Get Status (Requires Auth)
+GET {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001/status
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+### System - Health Check
+GET {{MMLib.DummyApi_HostAddress}}/health
+Accept: application/json
+
+### System - Reset All Data
+POST {{MMLib.DummyApi_HostAddress}}/reset
+Accept: application/json
+
+### System - Reset Products Only
+POST {{MMLib.DummyApi_HostAddress}}/reset?entity=products
+Accept: application/json
+
+### System - Reset Orders Only
+POST {{MMLib.DummyApi_HostAddress}}/reset?entity=orders
+Accept: application/json
+
+### Performance - Get Payload by Size
+GET {{MMLib.DummyApi_HostAddress}}/perf/payload?size=1kb
+Accept: application/json
+
+### Performance - Get Payload by Items Count
+GET {{MMLib.DummyApi_HostAddress}}/perf/payload?items=1000
+Accept: application/json
+
+### Performance - Get Counter
+GET {{MMLib.DummyApi_HostAddress}}/perf/counter
+Accept: application/json
+
+### Performance - Increment Counter
+POST {{MMLib.DummyApi_HostAddress}}/perf/counter/increment
+Accept: application/json
+
+### Performance - Reset Counter
+POST {{MMLib.DummyApi_HostAddress}}/perf/counter/reset
+Accept: application/json
+
+### Simulation - Delay
+GET {{MMLib.DummyApi_HostAddress}}/products
+Accept: application/json
+X-Simulate-Delay: 500
+
+### Simulation - Error
+GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+Accept: application/json
+X-Simulate-Error: true
+
+### Simulation - Retry (First 2 requests fail, 3rd succeeds)
+GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+Accept: application/json
+X-Simulate-Retry: 3
+X-Request-Id: test-retry-123
+
+### Simulation - Chaos Failure Rate (30% chance of error)
+GET {{MMLib.DummyApi_HostAddress}}/products
+Accept: application/json
+X-Chaos-FailureRate: 0.3
+
+### Simulation - Chaos Latency Range (Random delay 100-500ms)
+GET {{MMLib.DummyApi_HostAddress}}/products
+Accept: application/json
+X-Chaos-LatencyRange: 100-500
