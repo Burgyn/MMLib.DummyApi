@@ -1,6 +1,9 @@
 using MMLib.DummyApi.Domain.Orders;
 using MMLib.DummyApi.Domain.Products;
 using MMLib.DummyApi.Infrastructure;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.System.Endpoints;
 
@@ -10,12 +13,10 @@ public static class ResetEndpoint
     {
         return app.MapPost("/reset", Handle)
             .WithName("ResetData")
-            .WithSummary("Reset all data to initial state")
-            .WithTags("System")
-            .Produces(StatusCodes.Status200OK);
+            .WithSummary("Reset all data to initial state");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Ok<ResetResponse>, BadRequest<object>> Handle(
         IServiceProvider serviceProvider,
         string? entity = null)
     {
@@ -28,7 +29,7 @@ public static class ResetEndpoint
             productDataStore.Reset();
             orderDataStore.Reset();
             
-            return Results.Ok(new { message = "All data reset successfully" });
+            return TypedResults.Ok(new ResetResponse { Message = "All data reset successfully" });
         }
 
         // Reset specific entity
@@ -38,15 +39,20 @@ public static class ResetEndpoint
             case "products":
                 var productStore = serviceProvider.GetRequiredService<DataStore<Guid, Product>>();
                 productStore.Reset();
-                return Results.Ok(new { message = "Products reset successfully" });
+                return TypedResults.Ok(new ResetResponse { Message = "Products reset successfully" });
             
             case "orders":
                 var orderStore = serviceProvider.GetRequiredService<DataStore<Guid, Order>>();
                 orderStore.Reset();
-                return Results.Ok(new { message = "Orders reset successfully" });
+                return TypedResults.Ok(new ResetResponse { Message = "Orders reset successfully" });
             
             default:
-                return Results.BadRequest(new { error = $"Unknown entity: {entity}" });
+                return TypedResults.BadRequest<object>(new { error = $"Unknown entity: {entity}" });
         }
     }
+}
+
+public record ResetResponse
+{
+    public string Message { get; init; } = string.Empty;
 }

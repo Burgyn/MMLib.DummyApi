@@ -1,6 +1,9 @@
 using MMLib.DummyApi.Domain.Orders;
 using MMLib.DummyApi.Infrastructure;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Domain.Orders.Endpoints;
 
@@ -8,16 +11,12 @@ public static class GetOrderStatusEndpoint
 {
     public static RouteHandlerBuilder MapGetOrderStatus(this IEndpointRouteBuilder app)
     {
-        return app.MapGet("/orders/{id:guid}/status", Handle)
+        return app.MapGet("/{id:guid}/status", Handle)
             .WithName("GetOrderStatus")
-            .WithSummary("Get order background job status")
-            .WithTags("Orders")
-            .RequireAuthorization()
-            .Produces<object>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .WithSummary("Get order background job status");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Ok<OrderStatusResponse>, NotFound<object>> Handle(
         Guid id,
         OrderService orderService,
         BackgroundJobService backgroundJobService,
@@ -27,15 +26,22 @@ public static class GetOrderStatusEndpoint
         var order = orderService.GetById(id, userId);
         
         if (order == null)
-            return Results.NotFound(new { error = "Order not found" });
+            return TypedResults.NotFound<object>(new { error = "Order not found" });
 
         var status = backgroundJobService.GetOrderStatus(id);
         
-        return Results.Ok(new
+        return TypedResults.Ok(new OrderStatusResponse
         {
-            orderId = id,
-            status = order.Status.ToString().ToLowerInvariant(),
-            backgroundJobStatus = status
+            OrderId = id,
+            Status = order.Status.ToString().ToLowerInvariant(),
+            BackgroundJobStatus = status
         });
     }
+}
+
+public record OrderStatusResponse
+{
+    public Guid OrderId { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public string BackgroundJobStatus { get; init; } = string.Empty;
 }

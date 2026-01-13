@@ -1,9 +1,11 @@
 using MMLib.DummyApi.Domain.Orders;
 using MMLib.DummyApi.Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using MMLib.DummyApi.Configuration;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Domain.Orders.Endpoints;
 
@@ -11,17 +13,13 @@ public static class PostOrderEndpoint
 {
     public static RouteHandlerBuilder MapPostOrder(this IEndpointRouteBuilder app)
     {
-        return app.MapPost("/orders", Handle)
+        return app.MapPost("", Handle)
             .WithName("CreateOrder")
             .WithSummary("Create a new order")
-            .WithTags("Orders")
-            .RequireAuthorization()
-            .Accepts<CreateOrderRequest>("application/json")
-            .Produces<Order>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status400BadRequest);
+            .Accepts<CreateOrderRequest>("application/json");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Created<Order>, BadRequest<object>> Handle(
         CreateOrderRequest request,
         OrderService orderService,
         BackgroundJobService backgroundJobService,
@@ -35,13 +33,13 @@ public static class PostOrderEndpoint
         var (order, errors) = orderService.Create(createRequest, userId);
         
         if (order == null)
-            return Results.BadRequest(new { errors });
+            return TypedResults.BadRequest<object>(new { errors });
 
         // Schedule background job for status update
         var delayMs = GetBackgroundDelay(httpContext);
         backgroundJobService.ScheduleOrderStatusUpdate(order.Id, delayMs);
 
-        return Results.Created($"/orders/{order.Id}", order);
+        return TypedResults.Created($"/orders/{order.Id}", order);
     }
 
     private static int GetBackgroundDelay(HttpContext httpContext)

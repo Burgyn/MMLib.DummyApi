@@ -43,12 +43,17 @@ public static class Setup
 
     public static IEndpointRouteBuilder MapOrders(this IEndpointRouteBuilder app)
     {
-        GetOrdersEndpoint.MapGetOrders(app);
-        GetOrderEndpoint.MapGetOrder(app);
-        PostOrderEndpoint.MapPostOrder(app);
-        PutOrderEndpoint.MapPutOrder(app);
-        DeleteOrderEndpoint.MapDeleteOrder(app);
-        GetOrderStatusEndpoint.MapGetOrderStatus(app);
+        var group = app.MapGroup("/orders")
+            .WithTags("Orders")
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapGetOrders();
+        group.MapGetOrder();
+        group.MapPostOrder();
+        group.MapPutOrder();
+        group.MapDeleteOrder();
+        group.MapGetOrderStatus();
         
         return app;
     }

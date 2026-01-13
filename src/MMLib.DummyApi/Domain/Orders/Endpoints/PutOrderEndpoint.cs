@@ -1,5 +1,8 @@
 using MMLib.DummyApi.Domain.Orders;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Domain.Orders.Endpoints;
 
@@ -7,18 +10,13 @@ public static class PutOrderEndpoint
 {
     public static RouteHandlerBuilder MapPutOrder(this IEndpointRouteBuilder app)
     {
-        return app.MapPut("/orders/{id:guid}", Handle)
+        return app.MapPut("/{id:guid}", Handle)
             .WithName("UpdateOrder")
             .WithSummary("Update an existing order")
-            .WithTags("Orders")
-            .RequireAuthorization()
-            .Accepts<UpdateOrderRequest>("application/json")
-            .Produces<Order>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status400BadRequest);
+            .Accepts<UpdateOrderRequest>("application/json");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Ok<Order>, NotFound<object>, BadRequest<object>> Handle(
         Guid id,
         UpdateOrderRequest request,
         OrderService orderService,
@@ -30,10 +28,10 @@ public static class PutOrderEndpoint
         if (order == null)
         {
             if (errors.Count > 0)
-                return Results.BadRequest(new { errors });
-            return Results.NotFound(new { error = "Order not found" });
+                return TypedResults.BadRequest<object>(new { errors });
+            return TypedResults.NotFound<object>(new { error = "Order not found" });
         }
 
-        return Results.Ok(order);
+        return TypedResults.Ok(order);
     }
 }

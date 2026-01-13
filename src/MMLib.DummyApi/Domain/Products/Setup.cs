@@ -40,12 +40,15 @@ public static class Setup
 
     public static IEndpointRouteBuilder MapProducts(this IEndpointRouteBuilder app)
     {
-        GetProductsEndpoint.MapGetProducts(app);
-        GetProductEndpoint.MapGetProduct(app);
-        PostProductEndpoint.MapPostProduct(app);
-        PutProductEndpoint.MapPutProduct(app);
-        DeleteProductEndpoint.MapDeleteProduct(app);
-        GetProductStatusEndpoint.MapGetProductStatus(app);
+        var group = app.MapGroup("/products")
+            .WithTags("Products");
+
+        group.MapGetProducts();
+        group.MapGetProduct();
+        group.MapPostProduct();
+        group.MapPutProduct();
+        group.MapDeleteProduct();
+        group.MapGetProductStatus();
         
         return app;
     }

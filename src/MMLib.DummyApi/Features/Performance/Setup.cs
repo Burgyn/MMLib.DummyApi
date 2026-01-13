@@ -12,10 +12,13 @@ public static class Setup
 
     public static IEndpointRouteBuilder MapPerformance(this IEndpointRouteBuilder app)
     {
-        GetPayloadEndpoint.MapGetPayload(app);
-        GetCounterEndpoint.MapGetCounter(app);
-        IncrementCounterEndpoint.MapIncrementCounter(app);
-        ResetCounterEndpoint.MapResetCounter(app);
+        var group = app.MapGroup("/perf")
+            .WithTags("Performance");
+
+        group.MapGetPayload();
+        group.MapGetCounter();
+        group.MapIncrementCounter();
+        group.MapResetCounter();
         
         return app;
     }

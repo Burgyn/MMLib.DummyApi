@@ -1,3 +1,7 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
+
 namespace MMLib.DummyApi.Features.System.Endpoints;
 
 public static class HealthEndpoint
@@ -6,17 +10,21 @@ public static class HealthEndpoint
     {
         return app.MapGet("/health", Handle)
             .WithName("HealthCheck")
-            .WithSummary("Health check endpoint")
-            .WithTags("System")
-            .Produces<object>(StatusCodes.Status200OK);
+            .WithSummary("Health check endpoint");
     }
 
-    private static IResult Handle()
+    private static Ok<HealthResponse> Handle()
     {
-        return Results.Ok(new
+        return TypedResults.Ok(new HealthResponse
         {
-            status = "healthy",
-            timestamp = DateTime.UtcNow
+            Status = "healthy",
+            Timestamp = DateTime.UtcNow
         });
     }
+}
+
+public record HealthResponse
+{
+    public string Status { get; init; } = string.Empty;
+    public DateTime Timestamp { get; init; }
 }

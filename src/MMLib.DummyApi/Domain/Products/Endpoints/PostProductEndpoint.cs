@@ -1,7 +1,9 @@
 using MMLib.DummyApi.Domain.Products;
 using MMLib.DummyApi.Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Domain.Products.Endpoints;
 
@@ -9,16 +11,13 @@ public static class PostProductEndpoint
 {
     public static RouteHandlerBuilder MapPostProduct(this IEndpointRouteBuilder app)
     {
-        return app.MapPost("/products", Handle)
+        return app.MapPost("", Handle)
             .WithName("CreateProduct")
             .WithSummary("Create a new product")
-            .WithTags("Products")
-            .Accepts<CreateProductRequest>("application/json")
-            .Produces<Product>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status400BadRequest);
+            .Accepts<CreateProductRequest>("application/json");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Created<Product>, BadRequest<object>> Handle(
         CreateProductRequest request,
         ProductService productService,
         BackgroundJobService backgroundJobService,
@@ -27,13 +26,13 @@ public static class PostProductEndpoint
         var (product, errors) = productService.Create(request);
         
         if (product == null)
-            return Results.BadRequest(new { errors });
+            return TypedResults.BadRequest<object>(new { errors });
 
         // Schedule background job for calculated price
         var delayMs = GetBackgroundDelay(httpContext);
         backgroundJobService.ScheduleProductCalculation(product.Id, delayMs);
 
-        return Results.Created($"/products/{product.Id}", product);
+        return TypedResults.Created($"/products/{product.Id}", product);
     }
 
     private static int GetBackgroundDelay(HttpContext httpContext)

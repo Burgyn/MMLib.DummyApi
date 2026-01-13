@@ -12,8 +12,11 @@ public static class Setup
 
     public static IEndpointRouteBuilder MapSystem(this IEndpointRouteBuilder app)
     {
-        ResetEndpoint.MapReset(app);
-        HealthEndpoint.MapHealth(app);
+        var group = app.MapGroup("")
+            .WithTags("System");
+
+        group.MapReset();
+        group.MapHealth();
         
         return app;
     }

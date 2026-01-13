@@ -1,5 +1,8 @@
 using MMLib.DummyApi.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Performance.Endpoints;
 
@@ -7,15 +10,12 @@ public static class GetPayloadEndpoint
 {
     public static RouteHandlerBuilder MapGetPayload(this IEndpointRouteBuilder app)
     {
-        return app.MapGet("/perf/payload", Handle)
+        return app.MapGet("/payload", Handle)
             .WithName("GetPayload")
-            .WithSummary("Generate payload of specified size")
-            .WithTags("Performance")
-            .Produces<object>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status400BadRequest);
+            .WithSummary("Generate payload of specified size");
     }
 
-    private static IResult Handle(
+    private static HttpResults.Results<Ok<SizePayloadResponse>, Ok<ItemsPayloadResponse>, BadRequest<object>> Handle(
         string? size = null,
         int? items = null,
         IOptions<DummyApiOptions>? options = null)
@@ -37,51 +37,83 @@ public static class GetPayloadEndpoint
 
             if (targetBytes == 0)
             {
-                return Results.BadRequest(new { error = "Invalid size. Use: 1kb, 10kb, 100kb, 1mb" });
+                return TypedResults.BadRequest<object>(new { error = "Invalid size. Use: 1kb, 10kb, 100kb, 1mb" });
             }
 
             if (targetBytes > maxSizeMb * 1024 * 1024)
             {
-                return Results.BadRequest(new { error = $"Size exceeds maximum of {maxSizeMb}MB" });
+                return TypedResults.BadRequest<object>(new { error = $"Size exceeds maximum of {maxSizeMb}MB" });
             }
 
             // Generate payload
             var payload = GeneratePayload(targetBytes);
-            return Results.Ok(payload);
+            return TypedResults.Ok(payload);
         }
 
         if (items.HasValue)
         {
             if (items.Value <= 0)
             {
-                return Results.BadRequest(new { error = "Items must be greater than 0" });
+                return TypedResults.BadRequest<object>(new { error = "Items must be greater than 0" });
             }
 
             var payload = GenerateItemsPayload(items.Value);
-            return Results.Ok(payload);
+            return TypedResults.Ok(payload);
         }
 
-        return Results.BadRequest(new { error = "Specify either 'size' or 'items' parameter" });
+        return TypedResults.BadRequest<object>(new { error = "Specify either 'size' or 'items' parameter" });
     }
 
-    private static object GeneratePayload(int targetBytes)
+    private static SizePayloadResponse GeneratePayload(int targetBytes)
     {
-        var item = new { id = Guid.NewGuid(), data = new string('x', Math.Max(1, targetBytes / 10)) };
-        return new { size = targetBytes, item };
+        return new SizePayloadResponse
+        {
+            Size = targetBytes,
+            Item = new PayloadItem
+            {
+                Id = Guid.NewGuid(),
+                Data = new string('x', Math.Max(1, targetBytes / 10))
+            }
+        };
     }
 
-    private static object GenerateItemsPayload(int itemCount)
+    private static ItemsPayloadResponse GenerateItemsPayload(int itemCount)
     {
         var items = Enumerable.Range(1, itemCount)
-            .Select(i => new
+            .Select(i => new PayloadItem
             {
-                id = Guid.NewGuid(),
-                name = $"Item {i}",
-                value = i * 10,
-                timestamp = DateTime.UtcNow
+                Id = Guid.NewGuid(),
+                Name = $"Item {i}",
+                Value = i * 10,
+                Timestamp = DateTime.UtcNow
             })
             .ToList();
 
-        return new { count = items.Count, items };
+        return new ItemsPayloadResponse
+        {
+            Count = items.Count,
+            Items = items
+        };
     }
+}
+
+public record SizePayloadResponse
+{
+    public int Size { get; init; }
+    public PayloadItem Item { get; init; } = null!;
+}
+
+public record ItemsPayloadResponse
+{
+    public int Count { get; init; }
+    public List<PayloadItem> Items { get; init; } = new();
+}
+
+public record PayloadItem
+{
+    public Guid Id { get; init; }
+    public string? Name { get; init; }
+    public int? Value { get; init; }
+    public DateTime? Timestamp { get; init; }
+    public string? Data { get; init; }
 }
