@@ -8,6 +8,8 @@ public static class Setup
     {
         services.AddSingleton<CustomDataStore>();
         services.AddSingleton<JsonSchemaValidator>();
+        services.AddSingleton<AutoBogusSeeder>();
+        services.AddSingleton<RuleResolver>();
         services.AddScoped<CustomCollectionService>();
         
         return services;
@@ -16,27 +18,24 @@ public static class Setup
     public static IEndpointRouteBuilder MapCustomCollections(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/custom")
-            .WithTags("Custom");
+            .WithTags("Custom Collections");
 
         // Collection list
         group.MapGetCollections();
 
-        // CRUD endpoints
+        // Collection definitions management
+        group.MapGetCollectionDefinitions();
+        group.MapGetCollectionDefinition();
+        group.MapPostCollectionDefinition();
+        group.MapPutCollectionDefinition();
+        group.MapDeleteCollectionDefinition();
+
+        // CRUD endpoints for entities (generic fallback)
         group.MapGetCustomCollection();
         group.MapGetCustomEntity();
         group.MapPostCustomEntity();
         group.MapPutCustomEntity();
         group.MapDeleteCustomEntity();
-
-        // Schema endpoints
-        group.MapGetSchema();
-        group.MapPostSchema();
-        group.MapDeleteSchema();
-
-        // Background config endpoints
-        group.MapGetBackgroundConfig();
-        group.MapPostBackgroundConfig();
-        group.MapDeleteBackgroundConfig();
         
         return app;
     }

@@ -11,17 +11,28 @@ public static class PostCustomEntityEndpoint
     {
         return app.MapPost("/{collection}", Handle)
             .WithName("CreateCustomEntity")
-            .WithSummary("Create a new entity in a custom collection");
+            .WithSummary("Create a new entity in a collection");
     }
 
-    private static HttpResults.Results<Created<JsonElement>, BadRequest<object>> Handle(
+    private static HttpResults.Results<Created<JsonElement>, BadRequest<object>, NotFound<object>, UnauthorizedHttpResult> Handle(
         string collection,
         JsonElement data,
         CustomCollectionService service,
         BackgroundJobService backgroundJobService,
-        CustomDataStore dataStore,
         HttpContext httpContext)
     {
+        // Check if collection exists
+        if (!service.CollectionExists(collection))
+        {
+            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found. Create it first via POST /custom/_definitions" });
+        }
+
+        // Check auth if required
+        if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
+        {
+            return TypedResults.Unauthorized();
+        }
+
         var (entity, errors) = service.Create(collection, data);
 
         if (entity == null)
@@ -33,7 +44,7 @@ public static class PostCustomEntityEndpoint
         var id = Guid.Parse(entity.Value.GetProperty("id").GetString()!);
 
         // Schedule background job if configured
-        var config = dataStore.GetBackgroundConfig(collection);
+        var config = service.GetBackgroundConfig(collection);
         if (config != null)
         {
             var delayMs = GetBackgroundDelay(httpContext, config.DelayMs);

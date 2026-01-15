@@ -10,15 +10,28 @@ public static class PutCustomEntityEndpoint
     {
         return app.MapPut("/{collection}/{id:guid}", Handle)
             .WithName("UpdateCustomEntity")
-            .WithSummary("Update an entity in a custom collection");
+            .WithSummary("Update an entity in a collection");
     }
 
-    private static HttpResults.Results<Ok<JsonElement>, NotFound<object>, BadRequest<object>> Handle(
+    private static HttpResults.Results<Ok<JsonElement>, NotFound<object>, BadRequest<object>, UnauthorizedHttpResult> Handle(
         string collection,
         Guid id,
         JsonElement data,
-        CustomCollectionService service)
+        CustomCollectionService service,
+        HttpContext httpContext)
     {
+        // Check if collection exists
+        if (!service.CollectionExists(collection))
+        {
+            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
+        }
+
+        // Check auth if required
+        if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
+        {
+            return TypedResults.Unauthorized();
+        }
+
         var (entity, errors) = service.Update(collection, id, data);
 
         if (entity == null)

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using LiteDB;
 using MMLib.DummyApi.Features.Custom.Models;
 
 namespace MMLib.DummyApi.Features.Custom;
@@ -18,7 +17,11 @@ public class CustomCollectionService
     // Collection operations
     public IEnumerable<string> GetCollections() => _dataStore.GetCollectionNames();
 
-    public bool DeleteCollection(string collection) => _dataStore.DeleteCollection(collection);
+    public CollectionDefinition? GetDefinition(string collection) => _dataStore.GetDefinition(collection);
+
+    public bool CollectionExists(string collection) => _dataStore.CollectionExists(collection);
+
+    public bool IsAuthRequired(string collection) => _dataStore.IsAuthRequired(collection);
 
     // Entity operations - returns flat JSON with id
     public IEnumerable<JsonElement> GetAll(string collection)
@@ -35,10 +38,21 @@ public class CustomCollectionService
 
     public (JsonElement? Entity, List<string> Errors) Create(string collection, JsonElement data)
     {
-        var (isValid, errors) = _validator.Validate(collection, data);
-        if (!isValid)
+        // Check if collection exists
+        if (!_dataStore.CollectionExists(collection))
         {
-            return (null, errors);
+            return (null, new List<string> { $"Collection '{collection}' does not exist. Create it first via POST /custom/_definitions" });
+        }
+
+        // Validate against schema if defined
+        var schema = _dataStore.GetSchema(collection);
+        if (schema != null)
+        {
+            var (isValid, errors) = _validator.Validate(collection, data, schema.Value);
+            if (!isValid)
+            {
+                return (null, errors);
+            }
         }
 
         var doc = _dataStore.Add(collection, data);
@@ -53,10 +67,15 @@ public class CustomCollectionService
             return (null, new List<string> { "Entity not found" });
         }
 
-        var (isValid, errors) = _validator.Validate(collection, data);
-        if (!isValid)
+        // Validate against schema if defined
+        var schema = _dataStore.GetSchema(collection);
+        if (schema != null)
         {
-            return (null, errors);
+            var (isValid, errors) = _validator.Validate(collection, data, schema.Value);
+            if (!isValid)
+            {
+                return (null, errors);
+            }
         }
 
         var updated = _dataStore.Update(collection, id, data);
@@ -65,28 +84,9 @@ public class CustomCollectionService
 
     public bool Delete(string collection, Guid id) => _dataStore.Delete(collection, id);
 
-    // Schema operations
-    public JsonElement? GetSchema(string collection) => _dataStore.GetSchema(collection);
-
-    public (bool Success, string? Error) SetSchema(string collection, JsonElement schema)
-    {
-        var (isValid, error) = _validator.ValidateSchema(schema);
-        if (!isValid)
-        {
-            return (false, error);
-        }
-
-        _dataStore.SetSchema(collection, schema);
-        return (true, null);
-    }
-
-    public bool DeleteSchema(string collection) => _dataStore.DeleteSchema(collection);
-
-    // Background config operations
+    // Background config operations (derived from definition)
     public BackgroundJobConfig? GetBackgroundConfig(string collection) => _dataStore.GetBackgroundConfig(collection);
 
-    public void SetBackgroundConfig(string collection, BackgroundJobConfig config) 
-        => _dataStore.SetBackgroundConfig(collection, config);
-
-    public bool DeleteBackgroundConfig(string collection) => _dataStore.DeleteBackgroundConfig(collection);
+    // Rules operations (derived from definition)
+    public List<ResponseRule>? GetRules(string collection) => _dataStore.GetRules(collection);
 }

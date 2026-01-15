@@ -5,27 +5,15 @@ namespace MMLib.DummyApi.Features.Custom;
 
 public class JsonSchemaValidator
 {
-    private readonly CustomDataStore _dataStore;
-
-    public JsonSchemaValidator(CustomDataStore dataStore)
+    /// <summary>
+    /// Validate data against a provided schema
+    /// </summary>
+    public (bool IsValid, List<string> Errors) Validate(string collection, JsonElement data, JsonElement schema)
     {
-        _dataStore = dataStore;
-    }
-
-    public (bool IsValid, List<string> Errors) Validate(string collection, JsonElement data)
-    {
-        var schemaElement = _dataStore.GetSchema(collection);
-        
-        if (schemaElement == null)
-        {
-            // No schema defined - always valid
-            return (true, new List<string>());
-        }
-
         try
         {
-            var schema = JsonSchema.FromText(schemaElement.Value.GetRawText());
-            var result = schema.Evaluate(data);
+            var jsonSchema = JsonSchema.FromText(schema.GetRawText());
+            var result = jsonSchema.Evaluate(data);
 
             if (result.IsValid)
             {
@@ -41,6 +29,9 @@ public class JsonSchemaValidator
         }
     }
 
+    /// <summary>
+    /// Validate that a schema is a valid JSON Schema
+    /// </summary>
     public (bool IsValid, string? Error) ValidateSchema(JsonElement schema)
     {
         try

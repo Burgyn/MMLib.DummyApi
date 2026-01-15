@@ -8,44 +8,62 @@ namespace MMLib.DummyApi.Features.Custom;
 public class CustomDataStore : IDisposable
 {
     private readonly LiteDatabase _db;
-    private readonly ConcurrentDictionary<string, JsonElement> _schemas = new();
-    private readonly ConcurrentDictionary<string, BackgroundJobConfig> _backgroundConfigs = new();
+    private readonly ConcurrentDictionary<string, CollectionDefinition> _definitions = new();
+
+    private const string DefinitionsCollection = "_definitions";
 
     public CustomDataStore()
     {
         _db = new LiteDatabase("Filename=:memory:");
     }
 
+    // Collection definition operations
+    public IEnumerable<CollectionDefinition> GetAllDefinitions()
+        => _definitions.Values;
+
+    public CollectionDefinition? GetDefinition(string collection)
+        => _definitions.TryGetValue(collection.ToLowerInvariant(), out var def) ? def : null;
+
+    public void SaveDefinition(CollectionDefinition definition)
+    {
+        var key = definition.Name.ToLowerInvariant();
+        _definitions[key] = definition;
+    }
+
+    public bool DeleteDefinition(string collection)
+    {
+        var key = collection.ToLowerInvariant();
+        if (_definitions.TryRemove(key, out _))
+        {
+            _db.DropCollection(key);
+            return true;
+        }
+        return false;
+    }
+
     // Collection operations
     public IEnumerable<string> GetCollectionNames() 
-        => _db.GetCollectionNames().Where(n => !n.StartsWith("_"));
+        => _definitions.Keys;
 
     public bool CollectionExists(string collection) 
-        => _db.CollectionExists(collection);
-
-    public bool DeleteCollection(string collection)
-    {
-        _schemas.TryRemove(collection, out _);
-        _backgroundConfigs.TryRemove(collection, out _);
-        return _db.DropCollection(collection);
-    }
+        => _definitions.ContainsKey(collection.ToLowerInvariant());
 
     // Entity operations - returns flat structure with id merged into data
     public IEnumerable<BsonDocument> GetAll(string collection)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         return col.FindAll().ToList();
     }
 
     public BsonDocument? GetById(string collection, Guid id)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         return col.FindById(id);
     }
 
     public BsonDocument Add(string collection, JsonElement data)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         
         var doc = JsonToBson(data);
         doc["_id"] = Guid.NewGuid();
@@ -54,9 +72,20 @@ public class CustomDataStore : IDisposable
         return doc;
     }
 
+    public BsonDocument AddWithId(string collection, Guid id, JsonElement data)
+    {
+        var col = _db.GetCollection(collection.ToLowerInvariant());
+        
+        var doc = JsonToBson(data);
+        doc["_id"] = id;
+        
+        col.Insert(doc);
+        return doc;
+    }
+
     public BsonDocument? Update(string collection, Guid id, JsonElement data)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         var existing = col.FindById(id);
         
         if (existing == null)
@@ -71,14 +100,14 @@ public class CustomDataStore : IDisposable
 
     public bool Delete(string collection, Guid id)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         return col.Delete(id);
     }
 
     // Update entity data (for background jobs)
     public bool UpdateEntityData(string collection, Guid id, BsonDocument newData)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         var existing = col.FindById(id);
         
         if (existing == null)
@@ -88,52 +117,47 @@ public class CustomDataStore : IDisposable
         return col.Update(newData);
     }
 
-    // Schema operations
+    // Schema operations (derived from definition)
     public JsonElement? GetSchema(string collection)
     {
-        return _schemas.TryGetValue(collection, out var schema) ? schema : null;
+        var def = GetDefinition(collection);
+        return def?.Schema;
     }
 
-    public void SetSchema(string collection, JsonElement schema)
-    {
-        _schemas[collection] = schema.Clone();
-    }
-
-    public bool DeleteSchema(string collection)
-    {
-        return _schemas.TryRemove(collection, out _);
-    }
-
-    // Background config operations
+    // Background config operations (derived from definition)
     public BackgroundJobConfig? GetBackgroundConfig(string collection)
     {
-        return _backgroundConfigs.TryGetValue(collection, out var config) ? config : null;
+        var def = GetDefinition(collection);
+        return def?.BackgroundJob;
     }
 
-    public void SetBackgroundConfig(string collection, BackgroundJobConfig config)
+    // Rules operations (derived from definition)
+    public List<ResponseRule>? GetRules(string collection)
     {
-        _backgroundConfigs[collection] = config;
+        var def = GetDefinition(collection);
+        return def?.Rules;
     }
 
-    public bool DeleteBackgroundConfig(string collection)
+    // Auth required check
+    public bool IsAuthRequired(string collection)
     {
-        return _backgroundConfigs.TryRemove(collection, out _);
+        var def = GetDefinition(collection);
+        return def?.AuthRequired ?? false;
     }
 
     // Reset operations
     public void ResetAll()
     {
-        foreach (var name in _db.GetCollectionNames().Where(n => !n.StartsWith("_")).ToList())
+        foreach (var name in _definitions.Keys.ToList())
         {
             _db.DropCollection(name);
         }
-        _schemas.Clear();
-        _backgroundConfigs.Clear();
+        _definitions.Clear();
     }
 
     public void ResetCollection(string collection)
     {
-        var col = _db.GetCollection(collection);
+        var col = _db.GetCollection(collection.ToLowerInvariant());
         col.DeleteAll();
     }
 

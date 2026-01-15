@@ -10,14 +10,27 @@ public static class GetCustomEntityEndpoint
     {
         return app.MapGet("/{collection}/{id:guid}", Handle)
             .WithName("GetCustomEntity")
-            .WithSummary("Get a specific entity from a custom collection");
+            .WithSummary("Get a specific entity from a collection");
     }
 
-    private static HttpResults.Results<Ok<JsonElement>, NotFound<object>> Handle(
+    private static HttpResults.Results<Ok<JsonElement>, NotFound<object>, UnauthorizedHttpResult> Handle(
         string collection,
         Guid id,
-        CustomCollectionService service)
+        CustomCollectionService service,
+        HttpContext httpContext)
     {
+        // Check if collection exists
+        if (!service.CollectionExists(collection))
+        {
+            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
+        }
+
+        // Check auth if required
+        if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
+        {
+            return TypedResults.Unauthorized();
+        }
+
         var entity = service.GetById(collection, id);
         if (entity == null)
         {

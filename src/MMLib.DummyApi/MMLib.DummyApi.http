@@ -1,20 +1,57 @@
-@MMLib.DummyApi_HostAddress = http://localhost:5000
+@host = http://localhost:5229
 @ApiKey = test-api-key-123
 
-### Products - Get All
-GET {{MMLib.DummyApi_HostAddress}}/products
+### ===== COLLECTION DEFINITIONS =====
+
+### Get all collection definitions
+GET {{host}}/custom/_definitions
 Accept: application/json
 
-### Products - Get All with Filtering
-GET {{MMLib.DummyApi_HostAddress}}/products?category=Electronics&minPrice=100
+### Get specific collection definition
+GET {{host}}/custom/_definitions/products
 Accept: application/json
 
-### Products - Get By ID
-GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+### Create new collection
+POST {{host}}/custom/_definitions
+Content-Type: application/json
+
+{
+  "name": "users",
+  "displayName": "Users",
+  "description": "User accounts",
+  "authRequired": false,
+  "seedCount": 10,
+  "schema": {
+    "type": "object",
+    "required": ["firstName", "lastName", "email"],
+    "properties": {
+      "firstName": { "type": "string" },
+      "lastName": { "type": "string" },
+      "email": { "type": "string" },
+      "phone": { "type": "string" }
+    }
+  }
+}
+
+### Delete collection
+DELETE {{host}}/custom/_definitions/users
+
+### ===== PRODUCTS (Dynamic Collection) =====
+
+### Get all products
+GET {{host}}/products
 Accept: application/json
 
-### Products - Create
-POST {{MMLib.DummyApi_HostAddress}}/products
+### Get all products with filter
+GET {{host}}/products?category=Electronics
+Accept: application/json
+
+### Get product by ID
+GET {{host}}/products/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Create product
+POST {{host}}/products
 Content-Type: application/json
 
 {
@@ -25,269 +62,108 @@ Content-Type: application/json
   "category": "Electronics"
 }
 
-### Products - Create with Background Delay Override
-POST {{MMLib.DummyApi_HostAddress}}/products
+### Create product with background delay
+POST {{host}}/products
 Content-Type: application/json
 X-Background-Delay: 5000
 
 {
-  "name": "Product with Custom Delay",
-  "description": "Background job will complete in 5 seconds",
+  "name": "Product with Delay",
   "price": 199.99,
   "stockQuantity": 25,
   "category": "Electronics"
 }
 
-### Products - Update
-PUT {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
-Content-Type: application/json
-
-{
-  "name": "Updated Product",
-  "price": 149.99,
-  "stockQuantity": 30
-}
-
-### Products - Delete
-DELETE {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
-
-### Products - Get Status
-GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001/status
+### Test rule: error response
+GET {{host}}/products?category=error
 Accept: application/json
 
-### Orders - Get All (Requires Auth)
-GET {{MMLib.DummyApi_HostAddress}}/orders
+### ===== ORDERS (Authenticated Collection) =====
+
+### Get all orders (requires auth)
+GET {{host}}/orders
 Accept: application/json
 X-Api-Key: {{ApiKey}}
 
-### Orders - Get By ID (Requires Auth)
-GET {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
-Accept: application/json
-X-Api-Key: {{ApiKey}}
-
-### Orders - Create (Requires Auth)
-POST {{MMLib.DummyApi_HostAddress}}/orders
+### Create order (requires auth)
+POST {{host}}/orders
 Content-Type: application/json
 X-Api-Key: {{ApiKey}}
 
 {
-  "productIds": [
-    "00000000-0000-0000-0000-000000000001",
-    "00000000-0000-0000-0000-000000000002"
-  ],
-  "totalAmount": 299.99
+  "customerId": "cust-001",
+  "customerName": "John Doe",
+  "customerEmail": "john@example.com",
+  "totalAmount": 199.99,
+  "status": "pending"
 }
 
-### Orders - Create with Background Delay (Requires Auth)
-POST {{MMLib.DummyApi_HostAddress}}/orders
-Content-Type: application/json
-X-Api-Key: {{ApiKey}}
-X-Background-Delay: 3000
+### ===== CUSTOMERS (With Rules) =====
 
-{
-  "productIds": [
-    "00000000-0000-0000-0000-000000000001"
-  ],
-  "totalAmount": 199.99
-}
-
-### Orders - Update (Requires Auth)
-PUT {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
-Content-Type: application/json
-X-Api-Key: {{ApiKey}}
-
-{
-  "totalAmount": 349.99
-}
-
-### Orders - Delete (Requires Auth)
-DELETE {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001
-X-Api-Key: {{ApiKey}}
-
-### Orders - Get Status (Requires Auth)
-GET {{MMLib.DummyApi_HostAddress}}/orders/00000000-0000-0000-0000-000000000001/status
-Accept: application/json
-X-Api-Key: {{ApiKey}}
-
-### System - Health Check
-GET {{MMLib.DummyApi_HostAddress}}/health
+### Get all customers
+GET {{host}}/customers
 Accept: application/json
 
-### System - Reset All Data
-POST {{MMLib.DummyApi_HostAddress}}/reset
+### Get VIP customers (triggers rule)
+GET {{host}}/customers?status=vip
 Accept: application/json
 
-### System - Reset Products Only
-POST {{MMLib.DummyApi_HostAddress}}/reset?entity=products
-Accept: application/json
+### ===== SIMULATION HEADERS =====
 
-### System - Reset Orders Only
-POST {{MMLib.DummyApi_HostAddress}}/reset?entity=orders
+### Simulate delay
+GET {{host}}/products
 Accept: application/json
+X-Simulate-Delay: 2000
 
-### Performance - Get Payload by Size
-GET {{MMLib.DummyApi_HostAddress}}/perf/payload?size=1kb
-Accept: application/json
-
-### Performance - Get Payload by Items Count
-GET {{MMLib.DummyApi_HostAddress}}/perf/payload?items=1000
-Accept: application/json
-
-### Performance - Get Counter
-GET {{MMLib.DummyApi_HostAddress}}/perf/counter
-Accept: application/json
-
-### Performance - Increment Counter
-POST {{MMLib.DummyApi_HostAddress}}/perf/counter/increment
-Accept: application/json
-
-### Performance - Reset Counter
-POST {{MMLib.DummyApi_HostAddress}}/perf/counter/reset
-Accept: application/json
-
-### Simulation - Delay
-GET {{MMLib.DummyApi_HostAddress}}/products
-Accept: application/json
-X-Simulate-Delay: 500
-
-### Simulation - Error
-GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+### Simulate error
+GET {{host}}/products
 Accept: application/json
 X-Simulate-Error: true
 
-### Simulation - Retry (First 2 requests fail, 3rd succeeds)
-GET {{MMLib.DummyApi_HostAddress}}/products/00000000-0000-0000-0000-000000000001
+### Simulate retry (call 3 times - first 2 fail)
+GET {{host}}/products
 Accept: application/json
 X-Simulate-Retry: 3
-X-Request-Id: test-retry-123
+X-Request-Id: retry-test-123
 
-### Simulation - Chaos Failure Rate (30% chance of error)
-GET {{MMLib.DummyApi_HostAddress}}/products
+### Chaos failure rate (30% chance of error)
+GET {{host}}/products
 Accept: application/json
 X-Chaos-FailureRate: 0.3
 
-### Simulation - Chaos Latency Range (Random delay 100-500ms)
-GET {{MMLib.DummyApi_HostAddress}}/products
+### Chaos latency range
+GET {{host}}/products
 Accept: application/json
 X-Chaos-LatencyRange: 100-500
 
-###############################################
-# Custom Collections - Dynamic Endpoints
-###############################################
+### ===== SYSTEM =====
 
-### Custom - Get All Collections
-GET {{MMLib.DummyApi_HostAddress}}/custom
+### Reset all collections
+POST {{host}}/reset
+
+### Reset specific collection
+POST {{host}}/reset?collection=products
+
+### Health check
+GET {{host}}/health
 Accept: application/json
 
-### Custom - Create User
-POST {{MMLib.DummyApi_HostAddress}}/custom/users
-Content-Type: application/json
+### ===== PERFORMANCE =====
 
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "age": 30
-}
-
-### Custom - Get All Users
-GET {{MMLib.DummyApi_HostAddress}}/custom/users
+### Generate payload
+GET {{host}}/perf/payload?size=1kb
 Accept: application/json
 
-### Custom - Get User by ID
-GET {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
+### Generate items
+GET {{host}}/perf/payload?items=100
 Accept: application/json
 
-### Custom - Update User
-PUT {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
-Content-Type: application/json
-
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "age": 25
-}
-
-### Custom - Delete User
-DELETE {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
-
-### Custom - Define Schema for Users
-POST {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
-Content-Type: application/json
-
-{
-  "type": "object",
-  "required": ["name", "email"],
-  "properties": {
-    "name": { "type": "string", "minLength": 1 },
-    "email": { "type": "string", "format": "email" },
-    "age": { "type": "integer", "minimum": 0 }
-  }
-}
-
-### Custom - Get Schema for Users
-GET {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
+### Get counter
+GET {{host}}/perf/counter
 Accept: application/json
 
-### Custom - Delete Schema
-DELETE {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
+### Increment counter
+POST {{host}}/perf/counter/increment
 
-### Custom - Create Order (for background job demo)
-POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders
-Content-Type: application/json
-
-{
-  "customer": "John Doe",
-  "status": "pending",
-  "items": [
-    { "name": "Item 1", "price": 10.00 },
-    { "name": "Item 2", "price": 20.00 }
-  ]
-}
-
-### Custom - Configure Background Job (Sequence)
-POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
-Content-Type: application/json
-
-{
-  "fieldPath": "status",
-  "operation": "sequence:pending,processing,shipped,delivered",
-  "delayMs": 3000
-}
-
-### Custom - Configure Background Job (Sum)
-POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
-Content-Type: application/json
-
-{
-  "fieldPath": "total",
-  "operation": "sum:items.price",
-  "delayMs": 2000
-}
-
-### Custom - Configure Background Job (Timestamp)
-POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
-Content-Type: application/json
-
-{
-  "fieldPath": "lastUpdated",
-  "operation": "timestamp",
-  "delayMs": 1000
-}
-
-### Custom - Get Background Config
-GET {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
-Accept: application/json
-
-### Custom - Delete Background Config
-DELETE {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
-
-### Custom - Reset Custom Collections
-POST {{MMLib.DummyApi_HostAddress}}/reset?entity=custom
-Accept: application/json
-
-### Custom - With Simulation Headers
-GET {{MMLib.DummyApi_HostAddress}}/custom/users
-Accept: application/json
-X-Simulate-Delay: 500
-X-Simulate-Retry: 2
-X-Request-Id: custom-test-123
+### Reset counter
+POST {{host}}/perf/counter/reset

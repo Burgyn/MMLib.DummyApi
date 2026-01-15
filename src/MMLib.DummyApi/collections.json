@@ -1,0 +1,109 @@
+{
+  "collections": [
+    {
+      "name": "products",
+      "displayName": "Products",
+      "description": "Product catalog for e-commerce scenarios",
+      "authRequired": false,
+      "seedCount": 50,
+      "schema": {
+        "type": "object",
+        "required": ["name", "price"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "price": { "type": "number" },
+          "stockQuantity": { "type": "integer" },
+          "category": { "type": "string" },
+          "sku": { "type": "string" },
+          "imageUrl": { "type": "string" }
+        }
+      },
+      "backgroundJob": {
+        "fieldPath": "calculatedPrice",
+        "operation": "sum:price",
+        "delayMs": 2000
+      },
+      "rules": [
+        {
+          "priority": 1,
+          "method": "GET",
+          "when": [
+            { "source": "query", "field": "category", "operator": "equals", "value": "error" }
+          ],
+          "response": {
+            "statusCode": 500,
+            "body": { "error": "Simulated server error for category=error" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "displayName": "Orders",
+      "description": "Order management with authentication",
+      "authRequired": true,
+      "seedCount": 20,
+      "schema": {
+        "type": "object",
+        "required": ["customerId", "totalAmount"],
+        "properties": {
+          "customerId": { "type": "string" },
+          "customerName": { "type": "string" },
+          "customerEmail": { "type": "string" },
+          "totalAmount": { "type": "number" },
+          "status": { 
+            "type": "string",
+            "enum": ["pending", "processing", "completed", "cancelled"]
+          },
+          "shippingAddress": { "type": "string" },
+          "shippingCity": { "type": "string" },
+          "shippingCountry": { "type": "string" }
+        }
+      },
+      "backgroundJob": {
+        "fieldPath": "status",
+        "operation": "sequence:pending,processing,completed",
+        "delayMs": 3000
+      }
+    },
+    {
+      "name": "customers",
+      "displayName": "Customers",
+      "description": "Customer database for CRM scenarios",
+      "authRequired": false,
+      "seedCount": 30,
+      "schema": {
+        "type": "object",
+        "required": ["firstName", "lastName", "email"],
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "company": { "type": "string" },
+          "address": { "type": "string" },
+          "city": { "type": "string" },
+          "country": { "type": "string" },
+          "zipCode": { "type": "string" }
+        }
+      },
+      "rules": [
+        {
+          "priority": 1,
+          "method": "GET",
+          "when": [
+            { "source": "query", "field": "status", "operator": "equals", "value": "vip" }
+          ],
+          "response": {
+            "statusCode": 200,
+            "body": [
+              { "id": "vip-001", "firstName": "John", "lastName": "VIP", "email": "john.vip@example.com", "status": "vip" }
+            ],
+            "headers": { "X-Custom-Header": "VIP-Response" }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,19 +6,14 @@ public static class GetCollectionsEndpoint
 {
     public static RouteHandlerBuilder MapGetCollections(this IEndpointRouteBuilder app)
     {
-        return app.MapGet("", Handle)
+        return app.MapGet("/", Handle)
             .WithName("GetCollections")
-            .WithSummary("Get all custom collection names");
+            .WithSummary("Get list of all collection names");
     }
 
-    private static Ok<CollectionsResponse> Handle(CustomCollectionService service)
+    private static Ok<IEnumerable<string>> Handle(CustomCollectionService service)
     {
         var collections = service.GetCollections();
-        return TypedResults.Ok(new CollectionsResponse { Collections = collections.ToList() });
+        return TypedResults.Ok(collections);
     }
-}
-
-public record CollectionsResponse
-{
-    public List<string> Collections { get; init; } = new();
 }
