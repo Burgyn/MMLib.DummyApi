@@ -1,6 +1,7 @@
 using MMLib.DummyApi.Configuration;
 using MMLib.DummyApi.Domain.Orders;
 using MMLib.DummyApi.Domain.Products;
+using MMLib.DummyApi.Features.Custom;
 using MMLib.DummyApi.Features.Performance;
 using MMLib.DummyApi.Features.System;
 using MMLib.DummyApi.Infrastructure;
@@ -36,6 +37,7 @@ builder.Services.AddOrders();
 // Features
 builder.Services.AddSystem();
 builder.Services.AddPerformance();
+builder.Services.AddCustomCollections();
 
 var app = builder.Build();
 
@@ -56,5 +58,6 @@ app.MapProducts();
 app.MapOrders();
 app.MapSystem();
 app.MapPerformance();
+app.MapCustomCollections();
 
 app.Run();

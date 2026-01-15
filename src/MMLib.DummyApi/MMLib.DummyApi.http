@@ -170,3 +170,124 @@ X-Chaos-FailureRate: 0.3
 GET {{MMLib.DummyApi_HostAddress}}/products
 Accept: application/json
 X-Chaos-LatencyRange: 100-500
+
+###############################################
+# Custom Collections - Dynamic Endpoints
+###############################################
+
+### Custom - Get All Collections
+GET {{MMLib.DummyApi_HostAddress}}/custom
+Accept: application/json
+
+### Custom - Create User
+POST {{MMLib.DummyApi_HostAddress}}/custom/users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "age": 30
+}
+
+### Custom - Get All Users
+GET {{MMLib.DummyApi_HostAddress}}/custom/users
+Accept: application/json
+
+### Custom - Get User by ID
+GET {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+### Custom - Update User
+PUT {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "age": 25
+}
+
+### Custom - Delete User
+DELETE {{MMLib.DummyApi_HostAddress}}/custom/users/00000000-0000-0000-0000-000000000001
+
+### Custom - Define Schema for Users
+POST {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
+Content-Type: application/json
+
+{
+  "type": "object",
+  "required": ["name", "email"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "email": { "type": "string", "format": "email" },
+    "age": { "type": "integer", "minimum": 0 }
+  }
+}
+
+### Custom - Get Schema for Users
+GET {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
+Accept: application/json
+
+### Custom - Delete Schema
+DELETE {{MMLib.DummyApi_HostAddress}}/custom/users/_schema
+
+### Custom - Create Order (for background job demo)
+POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders
+Content-Type: application/json
+
+{
+  "customer": "John Doe",
+  "status": "pending",
+  "items": [
+    { "name": "Item 1", "price": 10.00 },
+    { "name": "Item 2", "price": 20.00 }
+  ]
+}
+
+### Custom - Configure Background Job (Sequence)
+POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
+Content-Type: application/json
+
+{
+  "fieldPath": "status",
+  "operation": "sequence:pending,processing,shipped,delivered",
+  "delayMs": 3000
+}
+
+### Custom - Configure Background Job (Sum)
+POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
+Content-Type: application/json
+
+{
+  "fieldPath": "total",
+  "operation": "sum:items.price",
+  "delayMs": 2000
+}
+
+### Custom - Configure Background Job (Timestamp)
+POST {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
+Content-Type: application/json
+
+{
+  "fieldPath": "lastUpdated",
+  "operation": "timestamp",
+  "delayMs": 1000
+}
+
+### Custom - Get Background Config
+GET {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
+Accept: application/json
+
+### Custom - Delete Background Config
+DELETE {{MMLib.DummyApi_HostAddress}}/custom/custom-orders/_background
+
+### Custom - Reset Custom Collections
+POST {{MMLib.DummyApi_HostAddress}}/reset?entity=custom
+Accept: application/json
+
+### Custom - With Simulation Headers
+GET {{MMLib.DummyApi_HostAddress}}/custom/users
+Accept: application/json
+X-Simulate-Delay: 500
+X-Simulate-Retry: 2
+X-Request-Id: custom-test-123

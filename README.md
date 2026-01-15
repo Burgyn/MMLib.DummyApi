@@ -5,11 +5,13 @@ A dummy REST API for integration testing demonstrations and benchmark tools. Thi
 ## Features
 
 - **CRUD Operations**: Products (public) and Orders (authenticated) domains
+- **Custom Collections**: Define your own dynamic endpoints with any JSON structure
 - **Retry Simulation**: Simulate retry scenarios via headers
 - **Error Simulation**: Test error handling with configurable failures
 - **Background Jobs**: Simulate async processing with delayed updates
 - **Performance Testing**: Payload generation and counter endpoints
 - **Authorization**: Simple API key authentication for Orders endpoints
+- **JSON Schema Validation**: Optional validation for custom collections
 
 ## Quick Start
 
@@ -88,6 +90,28 @@ All endpoints require `X-Api-Key` header.
 - `GET /perf/counter` - Get counter value
 - `POST /perf/counter/increment` - Increment counter
 - `POST /perf/counter/reset` - Reset counter
+
+### Custom Collections (Dynamic Endpoints)
+
+Create your own collections with any JSON structure. All simulation headers work automatically!
+
+**CRUD Operations:**
+- `GET /custom` - List all collection names
+- `GET /custom/{collection}` - List entities in collection
+- `GET /custom/{collection}/{id}` - Get entity by ID
+- `POST /custom/{collection}` - Create entity
+- `PUT /custom/{collection}/{id}` - Update entity
+- `DELETE /custom/{collection}/{id}` - Delete entity
+
+**Schema Validation:**
+- `GET /custom/{collection}/_schema` - Get schema
+- `POST /custom/{collection}/_schema` - Define JSON Schema
+- `DELETE /custom/{collection}/_schema` - Remove schema
+
+**Background Jobs:**
+- `GET /custom/{collection}/_background` - Get config
+- `POST /custom/{collection}/_background` - Configure background job
+- `DELETE /custom/{collection}/_background` - Remove config
 
 ## Simulation Headers
 
@@ -214,6 +238,73 @@ curl http://localhost:5000/perf/payload?items=1000
 curl http://localhost:5000/perf/counter
 curl -X POST http://localhost:5000/perf/counter/increment
 ```
+
+### Custom Collections
+
+```bash
+# Create a custom user entity
+curl -X POST http://localhost:5000/custom/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "age": 30,
+    "verified": false
+  }'
+
+# Define validation schema
+curl -X POST http://localhost:5000/custom/users/_schema \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "object",
+    "required": ["name", "email"],
+    "properties": {
+      "name": { "type": "string" },
+      "email": { "type": "string", "format": "email" },
+      "age": { "type": "integer", "minimum": 0 },
+      "verified": { "type": "boolean" }
+    }
+  }'
+
+# Configure background job for users (verification status progression)
+curl -X POST http://localhost:5000/custom/users/_background \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fieldPath": "verified",
+    "operation": "sequence:false,true",
+    "delayMs": 2000
+  }'
+
+# Create a user - verified will be set to true after 2 seconds
+curl -X POST http://localhost:5000/custom/users \
+  -H "Content-Type: application/json" \
+  -H "X-Background-Delay: 2000" \
+  -d '{
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "age": 25,
+    "verified": false
+  }'
+
+# Check user - initially verified=false
+curl http://localhost:5000/custom/users/{id}
+
+# After delay, verified will be automatically set to true
+curl http://localhost:5000/custom/users/{id}
+
+# Use with simulation headers!
+curl http://localhost:5000/custom/users \
+  -H "X-Simulate-Delay: 500" \
+  -H "X-Simulate-Retry: 2" \
+  -H "X-Request-Id: test-123"
+```
+
+**Background Job Operations:**
+- `sequence:val1,val2,val3` - Cycles through values
+- `sum:path.to.array.field` - Sum of values in array
+- `count:path.to.array` - Count of items
+- `timestamp` - Current UTC timestamp
+- `random:min,max` - Random number
 
 ## Use Cases
 

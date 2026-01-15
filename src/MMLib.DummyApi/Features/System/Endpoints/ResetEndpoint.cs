@@ -1,5 +1,6 @@
 using MMLib.DummyApi.Domain.Orders;
 using MMLib.DummyApi.Domain.Products;
+using MMLib.DummyApi.Features.Custom;
 using MMLib.DummyApi.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -25,9 +26,11 @@ public static class ResetEndpoint
             // Reset all entities
             var productDataStore = serviceProvider.GetRequiredService<DataStore<Guid, Product>>();
             var orderDataStore = serviceProvider.GetRequiredService<DataStore<Guid, Order>>();
+            var customDataStore = serviceProvider.GetRequiredService<CustomDataStore>();
             
             productDataStore.Reset();
             orderDataStore.Reset();
+            customDataStore.ResetAll();
             
             return TypedResults.Ok(new ResetResponse { Message = "All data reset successfully" });
         }
@@ -46,8 +49,13 @@ public static class ResetEndpoint
                 orderStore.Reset();
                 return TypedResults.Ok(new ResetResponse { Message = "Orders reset successfully" });
             
+            case "custom":
+                var customStore = serviceProvider.GetRequiredService<CustomDataStore>();
+                customStore.ResetAll();
+                return TypedResults.Ok(new ResetResponse { Message = "Custom collections reset successfully" });
+            
             default:
-                return TypedResults.BadRequest<object>(new { error = $"Unknown entity: {entity}" });
+                return TypedResults.BadRequest<object>(new { error = $"Unknown entity: {entity}. Valid values: products, orders, custom" });
         }
     }
 }
