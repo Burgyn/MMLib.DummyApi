@@ -27,7 +27,7 @@ public static class DynamicEndpointMapper
         }
 
         // GET /{collection} - List all
-        group.MapGet("/", (CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
+        var getListEndpoint = group.MapGet("/", (CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
             {
@@ -46,9 +46,11 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Get{displayName}List")
         .WithSummary($"Get all {displayName}");
+        
+        ConfigureAuthProduces(getListEndpoint, definition.AuthRequired);
 
         // GET /{collection}/{id} - Get by ID
-        group.MapGet("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
+        var getByIdEndpoint = group.MapGet("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
             {
@@ -71,9 +73,11 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Get{displayName}ById")
         .WithSummary($"Get {displayName} by ID");
+        
+        ConfigureAuthProduces(getByIdEndpoint, definition.AuthRequired);
 
         // POST /{collection} - Create
-        group.MapPost("/", async (JsonElement data, CustomCollectionService service, BackgroundJobService backgroundJobService, RuleResolver ruleResolver, HttpContext httpContext) =>
+        var postEndpoint = group.MapPost("/", async (JsonElement data, CustomCollectionService service, BackgroundJobService backgroundJobService, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
             {
@@ -107,9 +111,11 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Create{displayName}")
         .WithSummary($"Create {displayName}");
+        
+        ConfigureAuthProduces(postEndpoint, definition.AuthRequired);
 
         // PUT /{collection}/{id} - Update
-        group.MapPut("/{id:guid}", (Guid id, JsonElement data, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
+        var putEndpoint = group.MapPut("/{id:guid}", (Guid id, JsonElement data, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
             {
@@ -137,9 +143,11 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Update{displayName}")
         .WithSummary($"Update {displayName}");
+        
+        ConfigureAuthProduces(putEndpoint, definition.AuthRequired);
 
         // DELETE /{collection}/{id} - Delete
-        group.MapDelete("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
+        var deleteEndpoint = group.MapDelete("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
             {
@@ -162,6 +170,19 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Delete{displayName}")
         .WithSummary($"Delete {displayName}");
+        
+        ConfigureAuthProduces(deleteEndpoint, definition.AuthRequired);
+    }
+
+    /// <summary>
+    /// Configure 401 Unauthorized response in OpenAPI for authenticated endpoints
+    /// </summary>
+    private static void ConfigureAuthProduces(RouteHandlerBuilder endpoint, bool authRequired)
+    {
+        if (authRequired)
+        {
+            endpoint.Produces(StatusCodes.Status401Unauthorized);
+        }
     }
 
     private static IResult ApplyRuleResponse(RuleResponse response, HttpContext httpContext)

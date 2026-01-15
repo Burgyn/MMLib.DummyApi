@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using MMLib.DummyApi.Configuration;
 using MMLib.DummyApi.Features.Custom;
 using MMLib.DummyApi.Features.Performance;
@@ -14,7 +16,53 @@ builder.Services.Configure<DummyApiOptions>(
     builder.Configuration.GetSection(DummyApiOptions.SectionName));
 
 // Add services to the container
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    // Add operation transformer to set request body examples for collections
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        // Get collection name from the path
+        var path = context.Description.RelativePath;
+        if (string.IsNullOrEmpty(path)) return Task.CompletedTask;
+        
+        // Extract collection name from path (e.g., "/products" -> "products")
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return Task.CompletedTask;
+        var collectionName = parts[0];
+        
+        // Only process POST and PUT operations
+        var method = context.Description.HttpMethod;
+        if (method != "POST" && method != "PUT") return Task.CompletedTask;
+        
+        // Get datastore and seeder from DI
+        var serviceProvider = context.ApplicationServices;
+        var dataStore = serviceProvider.GetService<CustomDataStore>();
+        var seeder = serviceProvider.GetService<AutoBogusSeeder>();
+        
+        if (dataStore == null || seeder == null) return Task.CompletedTask;
+        
+        // Get collection definition
+        var definition = dataStore.GetDefinition(collectionName);
+        if (definition?.Schema == null) return Task.CompletedTask;
+        
+        // Generate example
+        var examples = seeder.Generate(definition.Schema, 1);
+        if (examples.Count == 0) return Task.CompletedTask;
+        
+        // Set example on request body
+        if (operation.RequestBody?.Content != null &&
+            operation.RequestBody.Content.TryGetValue("application/json", out var mediaType))
+        {
+            var exampleJson = JsonNode.Parse(examples[0].GetRawText());
+            if (exampleJson != null)
+            {
+                mediaType.Example = exampleJson;
+            }
+        }
+        
+        return Task.CompletedTask;
+    });
+});
 
 // Authentication
 builder.Services.AddAuthentication("ApiKey")
@@ -51,8 +99,8 @@ if (File.Exists(filePath))
 {
     logger.LogInformation("Loading collections from {FilePath}", filePath);
     var json = File.ReadAllText(filePath);
-    var collectionsFile = System.Text.Json.JsonSerializer.Deserialize<MMLib.DummyApi.Features.Custom.Models.CollectionsFile>(json, 
-        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    var collectionsFile = JsonSerializer.Deserialize<MMLib.DummyApi.Features.Custom.Models.CollectionsFile>(json, 
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     
     if (collectionsFile?.Collections != null)
     {
