@@ -10,13 +10,46 @@
         "type": "object",
         "required": ["name", "price"],
         "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "price": { "type": "number" },
-          "stockQuantity": { "type": "integer" },
-          "category": { "type": "string" },
-          "sku": { "type": "string" },
-          "imageUrl": { "type": "string" }
+          "name": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Product name"
+          },
+          "description": { 
+            "type": "string",
+            "maxLength": 500,
+            "description": "Product description"
+          },
+          "price": { 
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 999999.99,
+            "description": "Product price in EUR"
+          },
+          "stockQuantity": { 
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Available stock quantity"
+          },
+          "category": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "description": "Product category"
+          },
+          "sku": { 
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "description": "Stock keeping unit"
+          },
+          "imageUrl": { 
+            "type": "string",
+            "format": "uri",
+            "description": "Product image URL"
+          }
         }
       },
       "backgroundJob": {
@@ -48,17 +81,51 @@
         "type": "object",
         "required": ["customerId", "totalAmount"],
         "properties": {
-          "customerId": { "type": "string" },
-          "customerName": { "type": "string" },
-          "customerEmail": { "type": "string" },
-          "totalAmount": { "type": "number" },
+          "customerId": { 
+            "type": "string",
+            "minLength": 1,
+            "description": "Customer identifier"
+          },
+          "customerName": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Customer full name"
+          },
+          "customerEmail": { 
+            "type": "string",
+            "format": "email",
+            "description": "Customer email address"
+          },
+          "totalAmount": { 
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Total order amount"
+          },
           "status": { 
             "type": "string",
-            "enum": ["pending", "processing", "completed", "cancelled"]
+            "enum": ["pending", "processing", "completed", "cancelled"],
+            "description": "Order status"
           },
-          "shippingAddress": { "type": "string" },
-          "shippingCity": { "type": "string" },
-          "shippingCountry": { "type": "string" }
+          "shippingAddress": { 
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200,
+            "description": "Shipping address"
+          },
+          "shippingCity": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Shipping city"
+          },
+          "shippingCountry": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Shipping country"
+          }
         }
       },
       "backgroundJob": {
@@ -77,15 +144,57 @@
         "type": "object",
         "required": ["firstName", "lastName", "email"],
         "properties": {
-          "firstName": { "type": "string" },
-          "lastName": { "type": "string" },
-          "email": { "type": "string" },
-          "phone": { "type": "string" },
-          "company": { "type": "string" },
-          "address": { "type": "string" },
-          "city": { "type": "string" },
-          "country": { "type": "string" },
-          "zipCode": { "type": "string" }
+          "firstName": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "description": "Customer first name"
+          },
+          "lastName": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "description": "Customer last name"
+          },
+          "email": { 
+            "type": "string",
+            "format": "email",
+            "description": "Customer email address"
+          },
+          "phone": { 
+            "type": "string",
+            "pattern": "^[+]?[(]?[0-9]{1,4}[)]?[-\\s.]?[(]?[0-9]{1,4}[)]?[-\\s.]?[0-9]{1,9}$",
+            "description": "Phone number"
+          },
+          "company": { 
+            "type": "string",
+            "maxLength": 100,
+            "description": "Company name"
+          },
+          "address": { 
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200,
+            "description": "Street address"
+          },
+          "city": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "City"
+          },
+          "country": { 
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Country"
+          },
+          "zipCode": { 
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20,
+            "description": "Postal/ZIP code"
+          }
         }
       },
       "rules": [

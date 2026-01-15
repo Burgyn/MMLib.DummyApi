@@ -1,4 +1,6 @@
 using MMLib.DummyApi.Features.Custom.Endpoints;
+using MMLib.DummyApi.Features.Custom.OpenApi;
+using Microsoft.AspNetCore.OpenApi;
 
 namespace MMLib.DummyApi.Features.Custom;
 
@@ -13,6 +15,16 @@ public static class Setup
         services.AddScoped<CustomCollectionService>();
         
         return services;
+    }
+
+    /// <summary>
+    /// Register OpenAPI transformers for custom collections
+    /// </summary>
+    public static OpenApiOptions AddCollectionOpenApiTransformers(this OpenApiOptions options)
+    {
+        options.AddDocumentTransformer<CollectionOpenApiTransformer>();
+        options.AddOperationTransformer<CollectionOpenApiTransformer>();
+        return options;
     }
 
     public static IEndpointRouteBuilder MapCustomCollections(this IEndpointRouteBuilder app)

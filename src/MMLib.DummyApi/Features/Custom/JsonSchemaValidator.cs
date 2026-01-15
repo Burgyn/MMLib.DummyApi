@@ -55,15 +55,25 @@ public class JsonSchemaValidator
 
     private static void CollectErrorsRecursive(EvaluationResults result, List<string> errors)
     {
-        if (result.Errors != null)
+        // Collect errors from this result
+        if (result.Errors != null && result.Errors.Count > 0)
         {
             foreach (var error in result.Errors)
             {
                 var path = result.InstanceLocation.ToString();
-                errors.Add($"{path}: {error.Value}");
+                var errorMessage = error.Value ?? error.Key ?? "Validation error";
+                errors.Add($"{path}: {errorMessage}");
             }
         }
+        
+        // Also check if the result itself indicates failure
+        if (!result.IsValid && result.Errors == null)
+        {
+            var path = result.InstanceLocation.ToString();
+            errors.Add($"{path}: Validation failed");
+        }
 
+        // Recursively collect errors from child results
         if (result.Details != null)
         {
             foreach (var detail in result.Details)
