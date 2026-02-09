@@ -74,7 +74,7 @@ public class CollectionOpenApiTransformer : IOpenApiDocumentTransformer, IOpenAp
     }
 
     /// <summary>
-    /// Transform OpenAPI operation - add request body examples for POST/PUT endpoints
+    /// Transform OpenAPI operation - add request/response schemas and examples for all endpoints
     /// </summary>
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
@@ -82,37 +82,264 @@ public class CollectionOpenApiTransformer : IOpenApiDocumentTransformer, IOpenAp
         var path = context.Description.RelativePath;
         if (string.IsNullOrEmpty(path)) return Task.CompletedTask;
         
-        // Extract collection name from path (e.g., "/products" -> "products")
+        // Extract collection name from path (e.g., "/products" -> "products" or "/products/{id}" -> "products")
         var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0) return Task.CompletedTask;
         var collectionName = parts[0];
-        
-        var method = context.Description.HttpMethod;
-        
-        // Only process POST and PUT operations for examples
-        if (method != "POST" && method != "PUT") return Task.CompletedTask;
         
         // Get collection definition
         var definition = _dataStore.GetDefinition(collectionName);
         if (definition?.Schema == null) return Task.CompletedTask;
         
-        // Generate example
-        var examples = _seeder.Generate(definition.Schema, 1);
-        if (examples.Count > 0)
+        var method = context.Description.HttpMethod;
+        var isListEndpoint = parts.Length == 1; // Path like "/products" vs "/products/{id}"
+        
+        // Convert collection schema to OpenAPI schema
+        var itemSchema = JsonSchemaConverter.Convert(definition.Schema.Value);
+        
+        try
         {
-            // Set example on request body
-            if (operation.RequestBody?.Content != null &&
-                operation.RequestBody.Content.TryGetValue("application/json", out var mediaType))
+            switch (method)
             {
-                var exampleJson = JsonNode.Parse(examples[0].GetRawText());
-                if (exampleJson != null)
-                {
-                    mediaType.Example = exampleJson;
-                }
+                case "GET":
+                    if (isListEndpoint)
+                    {
+                        // GET list - array response
+                        SetArrayResponse(operation, itemSchema, definition, 200);
+                    }
+                    else
+                    {
+                        // GET by ID - single item response
+                        SetSingleItemResponse(operation, itemSchema, definition, 200);
+                        SetErrorResponse(operation, 404, "Not Found", "error");
+                    }
+                    break;
+                    
+                case "POST":
+                    // Request body schema and example
+                    SetRequestBody(operation, itemSchema, definition);
+                    // Response 201 Created - single item with id
+                    SetSingleItemResponse(operation, itemSchema, definition, 201);
+                    // Response 400 Bad Request
+                    SetValidationErrorResponse(operation, 400);
+                    break;
+                    
+                case "PUT":
+                    // Request body schema and example
+                    SetRequestBody(operation, itemSchema, definition);
+                    // Response 200 OK - single item
+                    SetSingleItemResponse(operation, itemSchema, definition, 200);
+                    // Response 400 Bad Request
+                    SetValidationErrorResponse(operation, 400);
+                    // Response 404 Not Found
+                    SetErrorResponse(operation, 404, "Not Found", "error");
+                    break;
+                    
+                case "DELETE":
+                    // Response 204 No Content (no body)
+                    // Response 404 Not Found
+                    SetErrorResponse(operation, 404, "Not Found", "error");
+                    break;
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to transform OpenAPI operation for {Method} {Path}", method, path);
         }
         
         return Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Set array response schema and example (for GET list endpoints)
+    /// </summary>
+    private void SetArrayResponse(OpenApiOperation operation, IOpenApiSchema itemSchema, CollectionDefinition definition, int statusCode)
+    {
+        // Create array schema
+        var arraySchema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = itemSchema
+        };
+        
+        // Generate multiple examples for array
+        var examples = _seeder.Generate(definition.Schema, 3);
+        var exampleArray = new JsonArray();
+        foreach (var example in examples)
+        {
+            var exampleJson = JsonNode.Parse(example.GetRawText());
+            if (exampleJson != null)
+            {
+                exampleArray.Add(exampleJson);
+            }
+        }
+        
+        // Set response - create new OpenApiResponse since Content is read-only
+        var response = new OpenApiResponse
+        {
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/json"] = new OpenApiMediaType
+                {
+                    Schema = arraySchema,
+                    Example = exampleArray.Count > 0 ? exampleArray : null
+                }
+            }
+        };
+        EnsureResponse(operation, statusCode.ToString());
+        operation.Responses![statusCode.ToString()] = response;
+    }
+    
+    /// <summary>
+    /// Set single item response schema and example (for GET by ID, POST, PUT)
+    /// </summary>
+    private void SetSingleItemResponse(OpenApiOperation operation, IOpenApiSchema itemSchema, CollectionDefinition definition, int statusCode)
+    {
+        // Generate example
+        var examples = _seeder.Generate(definition.Schema, 1);
+        JsonNode? exampleJson = null;
+        if (examples.Count > 0)
+        {
+            exampleJson = JsonNode.Parse(examples[0].GetRawText());
+        }
+        
+        // Set response - create new OpenApiResponse since Content is read-only
+        var response = new OpenApiResponse
+        {
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/json"] = new OpenApiMediaType
+                {
+                    Schema = itemSchema,
+                    Example = exampleJson
+                }
+            }
+        };
+        EnsureResponse(operation, statusCode.ToString());
+        operation.Responses![statusCode.ToString()] = response;
+    }
+    
+    /// <summary>
+    /// Set request body schema and example (for POST, PUT)
+    /// </summary>
+    private void SetRequestBody(OpenApiOperation operation, IOpenApiSchema itemSchema, CollectionDefinition definition)
+    {
+        // Generate example
+        var examples = _seeder.Generate(definition.Schema, 1);
+        JsonNode? exampleJson = null;
+        if (examples.Count > 0)
+        {
+            exampleJson = JsonNode.Parse(examples[0].GetRawText());
+        }
+        
+        // Set request body
+        operation.RequestBody ??= new OpenApiRequestBody
+        {
+            Required = true,
+            Content = new Dictionary<string, OpenApiMediaType>()
+        };
+        
+        operation.RequestBody.Content!["application/json"] = new OpenApiMediaType
+        {
+            Schema = itemSchema,
+            Example = exampleJson
+        };
+    }
+    
+    /// <summary>
+    /// Set error response schema (for 404, etc.)
+    /// </summary>
+    private void SetErrorResponse(OpenApiOperation operation, int statusCode, string description, string errorPropertyName)
+    {
+        var errorSchema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                [errorPropertyName] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.String,
+                    Description = "Error message"
+                }
+            },
+            Required = new HashSet<string> { errorPropertyName }
+        };
+        
+        var exampleJson = JsonObject.Parse($"{{\"{errorPropertyName}\": \"Resource not found\"}}");
+        
+        // Set response - create new OpenApiResponse since Content is read-only
+        var response = new OpenApiResponse
+        {
+            Description = description,
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/json"] = new OpenApiMediaType
+                {
+                    Schema = errorSchema,
+                    Example = exampleJson
+                }
+            }
+        };
+        EnsureResponse(operation, statusCode.ToString());
+        operation.Responses![statusCode.ToString()] = response;
+    }
+    
+    /// <summary>
+    /// Set validation error response schema (for 400 Bad Request)
+    /// </summary>
+    private void SetValidationErrorResponse(OpenApiOperation operation, int statusCode)
+    {
+        var errorSchema = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Object,
+            Properties = new Dictionary<string, IOpenApiSchema>
+            {
+                ["errors"] = new OpenApiSchema
+                {
+                    Type = JsonSchemaType.Array,
+                    Items = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String
+                    },
+                    Description = "Validation error messages"
+                }
+            },
+            Required = new HashSet<string> { "errors" }
+        };
+        
+        var exampleJson = JsonObject.Parse("{\"errors\": [\"Field 'name' is required\", \"Field 'price' must be greater than 0\"]}");
+        
+        // Set response - create new OpenApiResponse since Content is read-only
+        var response = new OpenApiResponse
+        {
+            Description = "Bad Request",
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/json"] = new OpenApiMediaType
+                {
+                    Schema = errorSchema,
+                    Example = exampleJson
+                }
+            }
+        };
+        EnsureResponse(operation, statusCode.ToString());
+        operation.Responses![statusCode.ToString()] = response;
+    }
+    
+    /// <summary>
+    /// Ensure response entry exists in operation
+    /// </summary>
+    private void EnsureResponse(OpenApiOperation operation, string statusCode)
+    {
+        if (operation.Responses == null)
+        {
+            operation.Responses = new OpenApiResponses();
+        }
+        
+        if (!operation.Responses.ContainsKey(statusCode))
+        {
+            operation.Responses[statusCode] = new OpenApiResponse();
+        }
     }
 
     /// <summary>

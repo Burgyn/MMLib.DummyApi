@@ -45,7 +45,8 @@ public static class DynamicEndpointMapper
             return Results.Ok(entities);
         })
         .WithName($"Get{displayName}List")
-        .WithSummary($"Get all {displayName}");
+        .WithSummary($"Get all {displayName}")
+        .Produces(StatusCodes.Status200OK);
 
         ConfigureAuthProduces(getListEndpoint, definition.AuthRequired);
 
@@ -72,7 +73,9 @@ public static class DynamicEndpointMapper
             return Results.Ok(entity.Value);
         })
         .WithName($"Get{displayName}ById")
-        .WithSummary($"Get {displayName} by ID");
+        .WithSummary($"Get {displayName} by ID")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         ConfigureAuthProduces(getByIdEndpoint, definition.AuthRequired);
 
@@ -110,7 +113,9 @@ public static class DynamicEndpointMapper
             return Results.Created($"/{collectionName}/{id}", entity.Value);
         })
         .WithName($"Create{displayName}")
-        .WithSummary($"Create {displayName}");
+        .WithSummary($"Create {displayName}")
+        .Produces(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest);
 
         ConfigureAuthProduces(postEndpoint, definition.AuthRequired);
 
@@ -142,7 +147,10 @@ public static class DynamicEndpointMapper
             return Results.Ok(entity.Value);
         })
         .WithName($"Update{displayName}")
-        .WithSummary($"Update {displayName}");
+        .WithSummary($"Update {displayName}")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
 
         ConfigureAuthProduces(putEndpoint, definition.AuthRequired);
 
@@ -169,7 +177,9 @@ public static class DynamicEndpointMapper
             return Results.NoContent();
         })
         .WithName($"Delete{displayName}")
-        .WithSummary($"Delete {displayName}");
+        .WithSummary($"Delete {displayName}")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
 
         ConfigureAuthProduces(deleteEndpoint, definition.AuthRequired);
     }
