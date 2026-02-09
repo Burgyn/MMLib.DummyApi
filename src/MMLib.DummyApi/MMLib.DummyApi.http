@@ -33,6 +33,10 @@ Content-Type: application/json
   }
 }
 
+### Get all users
+GET {{host}}/custom/users
+Accept: application/json
+
 ### Delete collection
 DELETE {{host}}/custom/_definitions/users
 

@@ -8,17 +8,12 @@ public class DummyApiOptions
     /// Path to the JSON file with collection definitions (can be mounted in Docker)
     /// </summary>
     public string? CollectionsFile { get; set; }
-    
+
     /// <summary>
     /// Default API key for authenticated collections
     /// </summary>
     public string DefaultApiKey { get; set; } = "test-api-key-123";
-    
-    /// <summary>
-    /// Default delay in milliseconds for background jobs
-    /// </summary>
-    public int BackgroundJobDelayMs { get; set; } = 2000;
-    
+
     /// <summary>
     /// Performance testing options
     /// </summary>

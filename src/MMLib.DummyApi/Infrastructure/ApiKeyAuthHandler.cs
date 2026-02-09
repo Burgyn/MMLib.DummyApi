@@ -6,19 +6,14 @@ using MMLib.DummyApi.Configuration;
 
 namespace MMLib.DummyApi.Infrastructure;
 
-public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+public class ApiKeyAuthenticationHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder,
+    IOptions<DummyApiOptions> dummyApiOptions)
+    : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    private readonly DummyApiOptions _options;
-
-    public ApiKeyAuthenticationHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder,
-        IOptions<DummyApiOptions> dummyApiOptions)
-        : base(options, logger, encoder)
-    {
-        _options = dummyApiOptions.Value;
-    }
+    private readonly DummyApiOptions _options = dummyApiOptions.Value;
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

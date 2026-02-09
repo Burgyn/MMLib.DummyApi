@@ -46,7 +46,7 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Get{displayName}List")
         .WithSummary($"Get all {displayName}");
-        
+
         ConfigureAuthProduces(getListEndpoint, definition.AuthRequired);
 
         // GET /{collection}/{id} - Get by ID
@@ -73,7 +73,7 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Get{displayName}ById")
         .WithSummary($"Get {displayName} by ID");
-        
+
         ConfigureAuthProduces(getByIdEndpoint, definition.AuthRequired);
 
         // POST /{collection} - Create
@@ -111,7 +111,7 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Create{displayName}")
         .WithSummary($"Create {displayName}");
-        
+
         ConfigureAuthProduces(postEndpoint, definition.AuthRequired);
 
         // PUT /{collection}/{id} - Update
@@ -143,7 +143,7 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Update{displayName}")
         .WithSummary($"Update {displayName}");
-        
+
         ConfigureAuthProduces(putEndpoint, definition.AuthRequired);
 
         // DELETE /{collection}/{id} - Delete
@@ -170,7 +170,7 @@ public static class DynamicEndpointMapper
         })
         .WithName($"Delete{displayName}")
         .WithSummary($"Delete {displayName}");
-        
+
         ConfigureAuthProduces(deleteEndpoint, definition.AuthRequired);
     }
 
@@ -207,7 +207,7 @@ public static class DynamicEndpointMapper
         {
             return Results.Json(response.Body.Value, statusCode: response.StatusCode);
         }
-        
+
         return Results.StatusCode(response.StatusCode);
     }
 

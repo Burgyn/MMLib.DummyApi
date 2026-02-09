@@ -7,20 +7,16 @@ namespace MMLib.DummyApi.Features.System.Endpoints;
 public static class HealthEndpoint
 {
     public static RouteHandlerBuilder MapHealth(this IEndpointRouteBuilder app)
-    {
-        return app.MapGet("/health", Handle)
-            .WithName("HealthCheck")
-            .WithSummary("Health check endpoint");
-    }
+        => app.MapGet("/health", Handle)
+        .WithName("HealthCheck")
+        .WithSummary("Health check endpoint");
 
     private static Ok<HealthResponse> Handle()
-    {
-        return TypedResults.Ok(new HealthResponse
+        => TypedResults.Ok(new HealthResponse
         {
             Status = "healthy",
             Timestamp = DateTime.UtcNow
         });
-    }
 }
 
 public record HealthResponse

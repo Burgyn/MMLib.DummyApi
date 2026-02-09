@@ -7,18 +7,11 @@ using Microsoft.Extensions.Options;
 
 namespace MMLib.DummyApi.Infrastructure;
 
-public class BackgroundJobService : IHostedService, IDisposable
+public class BackgroundJobService(IServiceProvider serviceProvider)
+    : IHostedService, IDisposable
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly DummyApiOptions _options;
     private readonly ConcurrentDictionary<(string Collection, Guid Id), CustomJobStatus> _customJobs = new();
     private Timer? _timer;
-
-    public BackgroundJobService(IServiceProvider serviceProvider, IOptions<DummyApiOptions> options)
-    {
-        _serviceProvider = serviceProvider;
-        _options = options.Value;
-    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -37,19 +30,10 @@ public class BackgroundJobService : IHostedService, IDisposable
         ProcessCustomJobs();
     }
 
-    // Custom collection jobs
     public void ScheduleCustomJob(string collection, Guid entityId, int delayMs)
     {
         var completedAt = DateTime.UtcNow.AddMilliseconds(delayMs);
         _customJobs.TryAdd((collection, entityId), new CustomJobStatus(completedAt, collection, 0));
-    }
-
-    public string GetCustomJobStatus(string collection, Guid entityId)
-    {
-        if (_customJobs.ContainsKey((collection, entityId)))
-            return "processing";
-        
-        return "completed";
     }
 
     private void ProcessCustomJobs()
@@ -61,19 +45,19 @@ public class BackgroundJobService : IHostedService, IDisposable
         {
             if (now >= job.CompletedAt)
             {
-                using var scope = _serviceProvider.CreateScope();
+                using var scope = serviceProvider.CreateScope();
                 var dataStore = scope.ServiceProvider.GetRequiredService<CustomDataStore>();
-                
+
                 var config = dataStore.GetBackgroundConfig(key.Collection);
                 var entity = dataStore.GetById(key.Collection, key.Id);
-                
+
                 if (config != null && entity != null)
                 {
                     var newData = ApplyOperationToBson(entity, config, job.SequenceIndex);
                     if (newData != null)
                     {
                         dataStore.UpdateEntityData(key.Collection, key.Id, newData);
-                        
+
                         // For sequence operations, schedule next step if not complete
                         if (config.Operation.StartsWith("sequence:"))
                         {
@@ -159,7 +143,7 @@ public class BackgroundJobService : IHostedService, IDisposable
     {
         var parts = path.Split('.');
         BsonValue current = doc;
-        
+
         for (int i = 0; i < parts.Length - 1; i++)
         {
             current = current[parts[i]];
@@ -212,5 +196,4 @@ public class BackgroundJobService : IHostedService, IDisposable
     }
 }
 
-public record BackgroundJobStatus(DateTime CompletedAt, string Status);
 public record CustomJobStatus(DateTime CompletedAt, string Collection, int SequenceIndex);

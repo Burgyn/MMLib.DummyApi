@@ -263,3 +263,10 @@ curl "http://localhost:5000/products?category=error"
 ## License
 
 See LICENSE file for details.
+
+## ToDo:
+
+- [] OpenAPI dokumentacia
+- [] celkova dokumentacia
+- [] refaktor jednotlivych tried, je to bordel
+- [] filter nefunguje
