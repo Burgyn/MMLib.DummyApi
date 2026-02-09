@@ -54,7 +54,7 @@
       },
       "backgroundJob": {
         "fieldPath": "calculatedPrice",
-        "operation": "sum:price",
+        "operation": "random:10,100",
         "delayMs": 2000
       },
       "rules": [

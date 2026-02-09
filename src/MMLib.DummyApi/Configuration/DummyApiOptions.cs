@@ -23,5 +23,4 @@ public class DummyApiOptions
 public class PerformanceOptions
 {
     public int MaxPayloadSizeMb { get; set; } = 10;
-    public int MaxDelayMs { get; set; } = 30000;
 }

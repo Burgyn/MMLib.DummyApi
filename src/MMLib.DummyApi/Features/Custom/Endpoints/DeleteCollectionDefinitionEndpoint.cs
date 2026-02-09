@@ -6,13 +6,11 @@ namespace MMLib.DummyApi.Features.Custom.Endpoints;
 public static class DeleteCollectionDefinitionEndpoint
 {
     public static RouteHandlerBuilder MapDeleteCollectionDefinition(this IEndpointRouteBuilder app)
-    {
-        return app.MapDelete("/_definitions/{name}", Handle)
+        => app.MapDelete("/_definitions/{name}", Handle)
             .WithName("DeleteCollectionDefinition")
             .WithSummary("Delete a collection and all its data");
-    }
 
-    private static HttpResults.Results<NoContent, NotFound<object>> Handle(
+    private static Results<NoContent, NotFound<object>> Handle(
         string name,
         CustomDataStore dataStore)
     {

@@ -6,11 +6,9 @@ namespace MMLib.DummyApi.Features.Custom.Endpoints;
 public static class DeleteCustomEntityEndpoint
 {
     public static RouteHandlerBuilder MapDeleteCustomEntity(this IEndpointRouteBuilder app)
-    {
-        return app.MapDelete("/{collection}/{id:guid}", Handle)
+        => app.MapDelete("/{collection}/{id:guid}", Handle)
             .WithName("DeleteCustomEntity")
             .WithSummary("Delete an entity from a collection");
-    }
 
     private static HttpResults.Results<NoContent, NotFound<object>, UnauthorizedHttpResult> Handle(
         string collection,
