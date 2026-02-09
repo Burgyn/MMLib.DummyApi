@@ -38,57 +38,6 @@ builder.Services.AddCustomCollections();
 
 var app = builder.Build();
 
-// Load collections at startup and map dynamic endpoints
-var dataStore = app.Services.GetRequiredService<CustomDataStore>();
-var seeder = app.Services.GetRequiredService<AutoBogusSeeder>();
-var options = app.Services.GetRequiredService<IOptions<DummyApiOptions>>().Value;
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-
-// Load collections from file
-var filePath = options.CollectionsFile;
-if (string.IsNullOrEmpty(filePath))
-{
-    filePath = Path.Combine(AppContext.BaseDirectory, "collections.json");
-}
-
-if (File.Exists(filePath))
-{
-    logger.LogInformation("Loading collections from {FilePath}", filePath);
-    var json = File.ReadAllText(filePath);
-    var collectionsFile = JsonSerializer.Deserialize<MMLib.DummyApi.Features.Custom.Models.CollectionsFile>(json, 
-        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-    
-    if (collectionsFile?.Collections != null)
-    {
-        foreach (var definition in collectionsFile.Collections)
-        {
-            logger.LogInformation("Loading collection '{Name}' with seedCount={SeedCount}", 
-                definition.Name, definition.SeedCount);
-            
-            // Save definition
-            dataStore.SaveDefinition(definition);
-            
-            // Seed data if requested
-            if (definition.SeedCount > 0)
-            {
-                var items = seeder.Generate(definition.Schema, definition.SeedCount);
-                foreach (var item in items)
-                {
-                    dataStore.Add(definition.Name, item);
-                }
-                logger.LogInformation("Seeded {Count} items for collection '{Name}'", items.Count, definition.Name);
-            }
-            
-            // Map dynamic endpoints for this collection
-            app.MapCollectionEndpoints(definition);
-        }
-    }
-}
-else
-{
-    logger.LogInformation("No collections file found at {FilePath}", filePath);
-}
-
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -105,5 +54,8 @@ app.UseAuthorization();
 app.MapSystem();
 app.MapPerformance();
 app.MapCustomCollections();
+
+// Load collections from file and map dynamic endpoints
+app.LoadAndMapCollections();
 
 app.Run();
