@@ -7,11 +7,9 @@ namespace MMLib.DummyApi.Features.Custom.Endpoints;
 public static class GetCollectionDefinitionEndpoint
 {
     public static RouteHandlerBuilder MapGetCollectionDefinition(this IEndpointRouteBuilder app)
-    {
-        return app.MapGet("/_definitions/{name}", Handle)
+        => app.MapGet("/_definitions/{name}", Handle)
             .WithName("GetCollectionDefinition")
             .WithSummary("Get a specific collection definition");
-    }
 
     private static HttpResults.Results<Ok<CollectionDefinition>, NotFound<object>> Handle(
         string name,

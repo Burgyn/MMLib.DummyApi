@@ -6,11 +6,9 @@ namespace MMLib.DummyApi.Features.Custom.Endpoints;
 public static class GetCollectionDefinitionsEndpoint
 {
     public static RouteHandlerBuilder MapGetCollectionDefinitions(this IEndpointRouteBuilder app)
-    {
-        return app.MapGet("/_definitions", Handle)
+        => app.MapGet("/_definitions", Handle)
             .WithName("GetCollectionDefinitions")
             .WithSummary("Get all collection definitions");
-    }
 
     private static Ok<IEnumerable<CollectionDefinition>> Handle(CustomDataStore dataStore)
     {

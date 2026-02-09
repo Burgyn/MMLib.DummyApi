@@ -10,19 +10,17 @@ public static class DeleteCustomEntityEndpoint
             .WithName("DeleteCustomEntity")
             .WithSummary("Delete an entity from a collection");
 
-    private static HttpResults.Results<NoContent, NotFound<object>, UnauthorizedHttpResult> Handle(
+    private static Results<NoContent, NotFound<object>, UnauthorizedHttpResult> Handle(
         string collection,
         Guid id,
         CustomCollectionService service,
         HttpContext httpContext)
     {
-        // Check if collection exists
         if (!service.CollectionExists(collection))
         {
             return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
         }
 
-        // Check auth if required
         if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
         {
             return TypedResults.Unauthorized();
