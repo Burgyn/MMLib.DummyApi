@@ -1,0 +1,12 @@
+.git
+.github
+**/bin
+**/obj
+**/.vs
+**/.vscode
+**/node_modules
+**/.teapie/cache
+**/.teapie/reports
+**/.teapie/runs
+*.md
+!README.md

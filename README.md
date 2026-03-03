@@ -22,6 +22,15 @@ dotnet run --project src/MMLib.DummyApi/MMLib.DummyApi.csproj
 
 ### Docker
 
+Pre-built images are available from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/burgyn/mmlib-dummyapi
+docker run -p 8080:8080 ghcr.io/burgyn/mmlib-dummyapi
+```
+
+Or build locally:
+
 ```bash
 # Build
 dotnet publish --os linux --arch x64 -c Release -p:PublishProfile=DefaultContainer
@@ -33,7 +42,7 @@ docker run -p 8080:8080 burgyn/mmlib-dummyapi
 docker run -p 8080:8080 \
   -v /path/to/my-collections.json:/config/collections.json \
   -e DUMMYAPI__COLLECTIONSFILE=/config/collections.json \
-  burgyn/mmlib-dummyapi
+  ghcr.io/burgyn/mmlib-dummyapi
 ```
 
 ## Configuration
@@ -266,6 +275,4 @@ See LICENSE file for details.
 
 ## ToDo:
 
-- [] celkova dokumentacia
-- [] refaktor jednotlivych tried, je to bordel
-- [] filter nefunguje
+- [ ] documentation
