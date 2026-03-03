@@ -1,0 +1,4 @@
+### Delete the 'tasks' dynamic collection definition
+# @name DeleteTasksCollectionRequest
+## TEST-EXPECT-STATUS: [204]
+DELETE {{ApiBaseUrl}}/custom/_definitions/tasks

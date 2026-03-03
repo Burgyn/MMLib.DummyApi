@@ -1,0 +1,8 @@
+### Retry Simulation - first 2 requests fail, 3rd succeeds
+# @name RetrySimulationRequest
+## RETRY-UNTIL-STATUS: [200]
+## RETRY-MAX-ATTEMPTS: 5
+GET {{ApiBaseUrl}}/products
+Accept: application/json
+X-Simulate-Retry: 3
+X-Request-Id: {{$guid}}

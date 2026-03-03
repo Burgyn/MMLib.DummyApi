@@ -1,0 +1,6 @@
+### List All Products
+# @name ListProductsRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/products
+Accept: application/json

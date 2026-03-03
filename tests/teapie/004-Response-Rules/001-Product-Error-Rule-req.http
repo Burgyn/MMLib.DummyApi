@@ -1,0 +1,5 @@
+### Product Error Rule - category=error triggers 500
+# @name ProductErrorRuleRequest
+## TEST-EXPECT-STATUS: [500]
+GET {{ApiBaseUrl}}/products?category=error
+Accept: application/json

@@ -1,0 +1,16 @@
+### Attempt to create the 'tasks' collection again - should return 409
+# @name DuplicateTasksCollectionRequest
+## TEST-EXPECT-STATUS: [409]
+POST {{ApiBaseUrl}}/custom/_definitions
+Content-Type: application/json
+
+{
+    "name": "tasks",
+    "displayName": "Tasks Duplicate",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" }
+        }
+    }
+}

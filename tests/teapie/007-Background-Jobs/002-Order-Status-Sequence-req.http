@@ -1,0 +1,28 @@
+### Create order to trigger status sequence background job
+# @name CreateOrderForBgJobRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/orders
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+X-Background-Delay: 1000
+
+{
+    "customerId": "teapie-bgjob-cust",
+    "customerName": "BgJob Test Customer",
+    "customerEmail": "bgjob@example.com",
+    "totalAmount": 150.00,
+    "status": "pending"
+}
+
+###
+
+### Poll order until status reaches 'completed' via background job sequence
+# @name PollOrderStatusCompletedRequest
+## RETRY-UNTIL-TEST-PASS: Status should be completed
+## RETRY-MAX-ATTEMPTS: 20
+## RETRY-BACKOFF-TYPE: Constant
+## RETRY-MAX-DELAY: 00:00:02
+GET {{ApiBaseUrl}}/orders/{{CreateOrderForBgJobRequest.response.body.$.id}}
+Accept: application/json
+X-Api-Key: {{ApiKey}}

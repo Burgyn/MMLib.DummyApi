@@ -1,0 +1,6 @@
+### Get Product by ID
+# @name GetProductRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/products/{{ProductId}}
+Accept: application/json

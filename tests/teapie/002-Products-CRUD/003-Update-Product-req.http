@@ -1,0 +1,14 @@
+### Update Product
+# @name UpdateProductRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+PUT {{ApiBaseUrl}}/products/{{ProductId}}
+Content-Type: application/json
+
+{
+    "name": "TeaPie Test Product Updated",
+    "description": "Updated description for TeaPie integration tests",
+    "price": 79.99,
+    "stockQuantity": 50,
+    "category": "Testing"
+}

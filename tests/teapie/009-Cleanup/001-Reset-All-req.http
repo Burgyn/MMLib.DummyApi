@@ -1,0 +1,4 @@
+### Reset all collections to initial seeded state
+# @name ResetAllCollectionsRequest
+## TEST-EXPECT-STATUS: [200]
+POST {{ApiBaseUrl}}/reset

@@ -1,0 +1,35 @@
+### Create Product - Missing Required Name
+# @name CreateProductMissingName
+## TEST-EXPECT-STATUS: [400]
+POST {{ApiBaseUrl}}/products
+Content-Type: application/json
+
+{
+    "price": 10.00
+}
+
+###
+
+### Create Product - Price Below Minimum
+# @name CreateProductInvalidPrice
+## TEST-EXPECT-STATUS: [400]
+POST {{ApiBaseUrl}}/products
+Content-Type: application/json
+
+{
+    "name": "Test Product",
+    "price": -5
+}
+
+###
+
+### Create Product - Name Too Short
+# @name CreateProductNameTooShort
+## TEST-EXPECT-STATUS: [400]
+POST {{ApiBaseUrl}}/products
+Content-Type: application/json
+
+{
+    "name": "X",
+    "price": 10.00
+}

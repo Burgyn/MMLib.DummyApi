@@ -1,0 +1,6 @@
+### Health Check
+# @name HealthCheckRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/health
+Accept: application/json

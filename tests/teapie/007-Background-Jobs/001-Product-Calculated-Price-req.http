@@ -1,0 +1,24 @@
+### Create product to trigger calculatedPrice background job
+# @name CreateProductForBgJobRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/products
+Content-Type: application/json
+X-Background-Delay: 1000
+
+{
+    "name": "Background Job Test Product",
+    "price": 25.00,
+    "category": "Testing"
+}
+
+###
+
+### Poll product until calculatedPrice is set by background job
+# @name PollProductCalculatedPriceRequest
+## RETRY-UNTIL-TEST-PASS: calculatedPrice should be set
+## RETRY-MAX-ATTEMPTS: 15
+## RETRY-BACKOFF-TYPE: Constant
+## RETRY-MAX-DELAY: 00:00:01
+GET {{ApiBaseUrl}}/products/{{CreateProductForBgJobRequest.response.body.$.id}}
+Accept: application/json

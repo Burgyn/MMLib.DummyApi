@@ -1,0 +1,40 @@
+### Create a new dynamic 'tasks' collection definition
+# @name CreateTasksCollectionRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/custom/_definitions
+Content-Type: application/json
+
+{
+    "name": "tasks",
+    "displayName": "Tasks",
+    "description": "Task management collection created by TeaPie tests",
+    "authRequired": false,
+    "seedCount": 5,
+    "schema": {
+        "type": "object",
+        "required": ["title", "priority"],
+        "properties": {
+            "title": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 200,
+                "description": "Task title"
+            },
+            "description": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Task description"
+            },
+            "priority": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Task priority"
+            },
+            "completed": {
+                "type": "boolean",
+                "description": "Task completion status"
+            }
+        }
+    }
+}

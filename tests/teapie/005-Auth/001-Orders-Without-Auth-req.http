@@ -1,0 +1,5 @@
+### Get Orders Without Authentication - should return 401
+# @name OrdersWithoutAuthRequest
+## TEST-EXPECT-STATUS: [401]
+GET {{ApiBaseUrl}}/orders
+Accept: application/json

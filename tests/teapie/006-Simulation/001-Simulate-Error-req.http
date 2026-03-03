@@ -1,0 +1,6 @@
+### Simulate Server Error via Header
+# @name SimulateErrorRequest
+## TEST-EXPECT-STATUS: [500]
+GET {{ApiBaseUrl}}/products
+Accept: application/json
+X-Simulate-Error: true

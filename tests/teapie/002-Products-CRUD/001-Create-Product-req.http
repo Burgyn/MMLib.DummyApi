@@ -1,0 +1,14 @@
+### Create Product
+# @name CreateProductRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/products
+Content-Type: application/json
+
+{
+    "name": "TeaPie Test Product",
+    "description": "A product created during TeaPie integration tests",
+    "price": 49.99,
+    "stockQuantity": 100,
+    "category": "Testing"
+}

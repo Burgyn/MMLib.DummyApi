@@ -1,0 +1,54 @@
+### Create a task entity in the dynamic collection
+# @name CreateTaskRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/custom/tasks
+Content-Type: application/json
+
+{
+    "title": "TeaPie Integration Test Task",
+    "description": "Created by dynamic collection CRUD test",
+    "priority": "high",
+    "completed": false
+}
+
+###
+
+### Get task by ID
+# @name GetTaskRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/tasks/{{CreateTaskRequest.response.body.$.id}}
+Accept: application/json
+
+###
+
+### Update task
+# @name UpdateTaskRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+PUT {{ApiBaseUrl}}/custom/tasks/{{CreateTaskRequest.response.body.$.id}}
+Content-Type: application/json
+
+{
+    "title": "TeaPie Integration Test Task - Updated",
+    "description": "Updated by dynamic collection CRUD test",
+    "priority": "medium",
+    "completed": true
+}
+
+###
+
+### Delete task
+# @name DeleteTaskRequest
+## TEST-EXPECT-STATUS: [204]
+DELETE {{ApiBaseUrl}}/custom/tasks/{{CreateTaskRequest.response.body.$.id}}
+
+###
+
+### List all tasks (seeded data should still exist)
+# @name ListTasksRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/tasks
+Accept: application/json

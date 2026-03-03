@@ -1,0 +1,33 @@
+### Create Order with Authentication
+# @name CreateOrderRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/orders
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+
+{
+    "customerId": "teapie-cust-001",
+    "customerName": "TeaPie Test Customer",
+    "customerEmail": "teapie@example.com",
+    "totalAmount": 299.99,
+    "status": "pending"
+}
+
+###
+
+### Get Order by ID with Authentication
+# @name GetOrderRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/orders/{{CreateOrderRequest.response.body.$.id}}
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Delete Order with Authentication
+# @name DeleteOrderRequest
+## TEST-EXPECT-STATUS: [204]
+DELETE {{ApiBaseUrl}}/orders/{{CreateOrderRequest.response.body.$.id}}
+X-Api-Key: {{ApiKey}}

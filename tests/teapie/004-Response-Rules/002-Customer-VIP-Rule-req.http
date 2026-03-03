@@ -1,0 +1,7 @@
+### Customer VIP Rule - status=vip triggers custom response
+# @name CustomerVIPRuleRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+## TEST-HAS-HEADER: X-Custom-Header
+GET {{ApiBaseUrl}}/customers?status=vip
+Accept: application/json

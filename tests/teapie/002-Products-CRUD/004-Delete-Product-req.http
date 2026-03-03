@@ -1,0 +1,4 @@
+### Delete Product
+# @name DeleteProductRequest
+## TEST-EXPECT-STATUS: [204]
+DELETE {{ApiBaseUrl}}/products/{{ProductId}}
