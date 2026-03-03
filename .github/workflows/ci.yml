@@ -110,6 +110,59 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
+      - name: Build image for testing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: mmlib-dummyapi:smoke-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run container with custom collection
+        run: |
+          docker run -d --name dummyapi-smoke \
+            -p 8080:8080 \
+            -v ${{ github.workspace }}/tests/docker/test-collections.json:/config/collections.json \
+            -e DUMMYAPI__COLLECTIONSFILE=/config/collections.json \
+            mmlib-dummyapi:smoke-test
+
+      - name: Wait for API to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              echo "API is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "API failed to start"
+              docker logs dummyapi-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Verify custom collection
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/books)
+          if [ "$STATUS" != "200" ]; then
+            echo "FAIL: GET /books returned $STATUS, expected 200"
+            exit 1
+          fi
+
+          COUNT=$(curl -s http://localhost:8080/books | jq length)
+          if [ "$COUNT" -lt 1 ]; then
+            echo "FAIL: Expected seeded books, got $COUNT items"
+            exit 1
+          fi
+          echo "PASS: GET /books returned $COUNT items"
+
+      - name: Cleanup smoke test
+        if: always()
+        run: |
+          docker logs dummyapi-smoke || true
+          docker rm -f dummyapi-smoke || true
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
