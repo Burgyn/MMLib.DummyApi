@@ -8,5 +8,5 @@ public record CollectionsFile
     /// <summary>
     /// List of collection definitions
     /// </summary>
-    public List<CollectionDefinition> Collections { get; init; } = new();
+    public List<CollectionDefinition> Collections { get; init; } = [];
 }

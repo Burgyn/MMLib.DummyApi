@@ -1,17 +1,19 @@
-using System.Text.Json;
 using MMLib.DummyApi.Features.Custom.Models;
 using MMLib.DummyApi.Infrastructure;
+using System.Text.Json;
 
 namespace MMLib.DummyApi.Features.Custom;
 
 /// <summary>
-/// Maps dynamic endpoints for collections after they are loaded
+/// Maps dynamic endpoints for collections after they are loaded.
 /// </summary>
 public static class DynamicEndpointMapper
 {
     /// <summary>
-    /// Map endpoints for a specific collection
+    /// Maps CRUD endpoints for a specific collection definition.
     /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
+    /// <param name="definition">The collection definition to map endpoints for.</param>
     public static void MapCollectionEndpoints(this IEndpointRouteBuilder app, CollectionDefinition definition)
     {
         var collectionName = definition.Name.ToLowerInvariant();
@@ -26,7 +28,6 @@ public static class DynamicEndpointMapper
             group.WithDescription(definition.Description);
         }
 
-        // GET /{collection} - List all
         var getListEndpoint = group.MapGet("/", (CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
@@ -34,7 +35,6 @@ public static class DynamicEndpointMapper
                 return Results.Unauthorized();
             }
 
-            // Check for matching rule
             var ruleResponse = ruleResolver.TryMatchRule(definition.Rules, "GET", httpContext);
             if (ruleResponse != null)
             {
@@ -50,7 +50,6 @@ public static class DynamicEndpointMapper
 
         ConfigureAuthProduces(getListEndpoint, definition.AuthRequired);
 
-        // GET /{collection}/{id} - Get by ID
         var getByIdEndpoint = group.MapGet("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
@@ -58,7 +57,6 @@ public static class DynamicEndpointMapper
                 return Results.Unauthorized();
             }
 
-            // Check for matching rule
             var ruleResponse = ruleResolver.TryMatchRule(definition.Rules, "GET", httpContext);
             if (ruleResponse != null)
             {
@@ -79,7 +77,6 @@ public static class DynamicEndpointMapper
 
         ConfigureAuthProduces(getByIdEndpoint, definition.AuthRequired);
 
-        // POST /{collection} - Create
         var postEndpoint = group.MapPost("/", async (JsonElement data, CustomCollectionService service, BackgroundJobService backgroundJobService, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
@@ -87,7 +84,6 @@ public static class DynamicEndpointMapper
                 return Results.Unauthorized();
             }
 
-            // Check for matching rule
             var ruleResponse = ruleResolver.TryMatchRule(definition.Rules, "POST", httpContext, data);
             if (ruleResponse != null)
             {
@@ -102,7 +98,6 @@ public static class DynamicEndpointMapper
 
             var id = Guid.Parse(entity.Value.GetProperty("id").GetString()!);
 
-            // Schedule background job if configured
             var config = service.GetBackgroundConfig(collectionName);
             if (config != null)
             {
@@ -119,7 +114,6 @@ public static class DynamicEndpointMapper
 
         ConfigureAuthProduces(postEndpoint, definition.AuthRequired);
 
-        // PUT /{collection}/{id} - Update
         var putEndpoint = group.MapPut("/{id:guid}", (Guid id, JsonElement data, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
@@ -127,7 +121,6 @@ public static class DynamicEndpointMapper
                 return Results.Unauthorized();
             }
 
-            // Check for matching rule
             var ruleResponse = ruleResolver.TryMatchRule(definition.Rules, "PUT", httpContext, data);
             if (ruleResponse != null)
             {
@@ -154,7 +147,6 @@ public static class DynamicEndpointMapper
 
         ConfigureAuthProduces(putEndpoint, definition.AuthRequired);
 
-        // DELETE /{collection}/{id} - Delete
         var deleteEndpoint = group.MapDelete("/{id:guid}", (Guid id, CustomCollectionService service, RuleResolver ruleResolver, HttpContext httpContext) =>
         {
             if (definition.AuthRequired && !httpContext.User.Identity?.IsAuthenticated == true)
@@ -162,7 +154,6 @@ public static class DynamicEndpointMapper
                 return Results.Unauthorized();
             }
 
-            // Check for matching rule
             var ruleResponse = ruleResolver.TryMatchRule(definition.Rules, "DELETE", httpContext);
             if (ruleResponse != null)
             {
@@ -185,8 +176,20 @@ public static class DynamicEndpointMapper
     }
 
     /// <summary>
-    /// Configure 401 Unauthorized response in OpenAPI for authenticated endpoints
+    /// Returns the background job delay from the request header, or the default if not present.
     /// </summary>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <param name="defaultDelay">The default delay in milliseconds.</param>
+    internal static int GetBackgroundDelay(HttpContext httpContext, int defaultDelay)
+    {
+        if (httpContext.Request.Headers.TryGetValue("X-Background-Delay", out var delayHeader) &&
+            int.TryParse(delayHeader, out var delay))
+        {
+            return delay;
+        }
+        return defaultDelay;
+    }
+
     private static void ConfigureAuthProduces(RouteHandlerBuilder endpoint, bool authRequired)
     {
         if (authRequired)
@@ -197,7 +200,6 @@ public static class DynamicEndpointMapper
 
     private static IResult ApplyRuleResponse(RuleResponse response, HttpContext httpContext)
     {
-        // Add custom headers
         if (response.Headers != null)
         {
             foreach (var header in response.Headers)
@@ -206,28 +208,16 @@ public static class DynamicEndpointMapper
             }
         }
 
-        // Apply delay if specified
         if (response.DelayMs.HasValue && response.DelayMs.Value > 0)
         {
             Thread.Sleep(response.DelayMs.Value);
         }
 
-        // Return response based on status code
         if (response.Body.HasValue)
         {
             return Results.Json(response.Body.Value, statusCode: response.StatusCode);
         }
 
         return Results.StatusCode(response.StatusCode);
-    }
-
-    private static int GetBackgroundDelay(HttpContext httpContext, int defaultDelay)
-    {
-        if (httpContext.Request.Headers.TryGetValue("X-Background-Delay", out var delayHeader) &&
-            int.TryParse(delayHeader, out var delay))
-        {
-            return delay;
-        }
-        return defaultDelay;
     }
 }

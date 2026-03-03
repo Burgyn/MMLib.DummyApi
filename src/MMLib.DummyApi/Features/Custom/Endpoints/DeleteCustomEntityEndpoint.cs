@@ -1,10 +1,16 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
+/// <summary>
+/// Endpoint for deleting an entity from a collection.
+/// </summary>
 public static class DeleteCustomEntityEndpoint
 {
+    /// <summary>
+    /// Maps the DELETE /{collection}/{id} endpoint.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static RouteHandlerBuilder MapDeleteCustomEntity(this IEndpointRouteBuilder app)
         => app.MapDelete("/{collection}/{id:guid}", Handle)
             .WithName("DeleteCustomEntity")

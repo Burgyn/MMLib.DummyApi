@@ -1,7 +1,13 @@
 namespace MMLib.DummyApi.Configuration;
 
+/// <summary>
+/// Configuration options for the DummyApi.
+/// </summary>
 public class DummyApiOptions
 {
+    /// <summary>
+    /// Configuration section name.
+    /// </summary>
     public const string SectionName = "DummyApi";
 
     /// <summary>
@@ -20,7 +26,13 @@ public class DummyApiOptions
     public PerformanceOptions Performance { get; set; } = new();
 }
 
+/// <summary>
+/// Performance-related configuration options.
+/// </summary>
 public class PerformanceOptions
 {
+    /// <summary>
+    /// Maximum allowed payload size in megabytes.
+    /// </summary>
     public int MaxPayloadSizeMb { get; set; } = 10;
 }

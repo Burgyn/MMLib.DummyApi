@@ -3,11 +3,17 @@ using Json.Schema;
 
 namespace MMLib.DummyApi.Features.Custom;
 
+/// <summary>
+/// Validates JSON data against a JSON Schema.
+/// </summary>
 public class JsonSchemaValidator
 {
     /// <summary>
-    /// Validate data against a provided schema
+    /// Validates data against a provided schema.
     /// </summary>
+    /// <param name="collection">The collection name (used for error context).</param>
+    /// <param name="data">The JSON data to validate.</param>
+    /// <param name="schema">The JSON schema to validate against.</param>
     public (bool IsValid, List<string> Errors) Validate(string collection, JsonElement data, JsonElement schema)
     {
         try
@@ -17,7 +23,7 @@ public class JsonSchemaValidator
 
             if (result.IsValid)
             {
-                return (true, new List<string>());
+                return (true, []);
             }
 
             var errors = CollectErrors(result);
@@ -25,18 +31,18 @@ public class JsonSchemaValidator
         }
         catch (Exception ex)
         {
-            return (false, new List<string> { $"Schema validation error: {ex.Message}" });
+            return (false, [$"Schema validation error: {ex.Message}"]);
         }
     }
 
     /// <summary>
-    /// Validate that a schema is a valid JSON Schema
+    /// Validates that the given element is a well-formed JSON Schema.
     /// </summary>
+    /// <param name="schema">The schema element to validate.</param>
     public (bool IsValid, string? Error) ValidateSchema(JsonElement schema)
     {
         try
         {
-            // Try to parse the schema to validate it's a valid JSON Schema
             JsonSchema.FromText(schema.GetRawText());
             return (true, null);
         }
@@ -48,14 +54,13 @@ public class JsonSchemaValidator
 
     private static List<string> CollectErrors(EvaluationResults result)
     {
-        var errors = new List<string>();
+        List<string> errors = [];
         CollectErrorsRecursive(result, errors);
         return errors;
     }
 
     private static void CollectErrorsRecursive(EvaluationResults result, List<string> errors)
     {
-        // Collect errors from this result
         if (result.Errors != null && result.Errors.Count > 0)
         {
             foreach (var error in result.Errors)
@@ -65,15 +70,13 @@ public class JsonSchemaValidator
                 errors.Add($"{path}: {errorMessage}");
             }
         }
-        
-        // Also check if the result itself indicates failure
+
         if (!result.IsValid && result.Errors == null)
         {
             var path = result.InstanceLocation.ToString();
             errors.Add($"{path}: Validation failed");
         }
 
-        // Recursively collect errors from child results
         if (result.Details != null)
         {
             foreach (var detail in result.Details)

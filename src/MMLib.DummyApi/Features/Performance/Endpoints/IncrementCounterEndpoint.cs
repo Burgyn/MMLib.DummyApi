@@ -1,22 +1,21 @@
-using MMLib.DummyApi.Features.Performance;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
-using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Performance.Endpoints;
 
+/// <summary>
+/// Endpoint for incrementing the performance counter.
+/// </summary>
 public static class IncrementCounterEndpoint
 {
+    /// <summary>
+    /// Maps the POST /counter/increment endpoint.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static RouteHandlerBuilder MapIncrementCounter(this IEndpointRouteBuilder app)
-    {
-        return app.MapPost("/counter/increment", Handle)
+        => app.MapPost("/counter/increment", Handle)
             .WithName("IncrementCounter")
             .WithSummary("Increment the counter");
-    }
 
     private static Ok<CounterResponse> Handle(PerformanceCounter counter)
-    {
-        var newValue = counter.Increment();
-        return TypedResults.Ok(new CounterResponse { Value = newValue });
-    }
+        => TypedResults.Ok(new CounterResponse { Value = counter.Increment() });
 }

@@ -1,30 +1,29 @@
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Text.Json;
 using Bogus;
 
 namespace MMLib.DummyApi.Features.Custom;
 
 /// <summary>
-/// Generates fake data using Bogus based on JSON schema
-/// Uses smart field name mapping to generate realistic data
+/// Generates fake data using Bogus based on JSON schema.
+/// Uses smart field name mapping to generate realistic data.
 /// </summary>
 public class AutoBogusSeeder
 {
     private readonly Faker _faker = new();
 
     /// <summary>
-    /// Generate fake data items based on JSON schema
+    /// Generates fake data items based on JSON schema.
     /// </summary>
+    /// <param name="schema">The JSON schema describing the item shape.</param>
+    /// <param name="count">Number of items to generate.</param>
     public List<JsonElement> Generate(JsonElement? schema, int count)
     {
-        if (count <= 0) return new List<JsonElement>();
-        
-        var results = new List<JsonElement>();
-        
+        if (count <= 0) return [];
+
+        List<JsonElement> results = [];
+
         if (schema == null || schema.Value.ValueKind != JsonValueKind.Object)
         {
-            // No schema - generate simple objects with name
             for (int i = 0; i < count; i++)
             {
                 var json = JsonSerializer.Serialize(new { name = $"Item {i + 1}" });
@@ -33,7 +32,6 @@ public class AutoBogusSeeder
             return results;
         }
 
-        // Generate items based on schema properties
         for (int i = 0; i < count; i++)
         {
             var item = GenerateFromSchema(schema.Value);
@@ -43,13 +41,13 @@ public class AutoBogusSeeder
             });
             results.Add(JsonDocument.Parse(json).RootElement.Clone());
         }
-        
+
         return results;
     }
 
     private Dictionary<string, object?> GenerateFromSchema(JsonElement schema)
     {
-        var result = new Dictionary<string, object?>();
+        Dictionary<string, object?> result = new();
 
         if (!schema.TryGetProperty("properties", out var properties))
             return result;
@@ -66,22 +64,19 @@ public class AutoBogusSeeder
     private object? GenerateValue(string fieldName, JsonElement propertySchema)
     {
         var fieldNameLower = fieldName.ToLowerInvariant();
-        
-        // Get the JSON schema type
+
         var jsonType = "string";
         if (propertySchema.TryGetProperty("type", out var typeElement))
         {
             jsonType = typeElement.GetString() ?? "string";
         }
 
-        // Check for enum first
         if (propertySchema.TryGetProperty("enum", out var enumElement))
         {
             var values = enumElement.EnumerateArray().Select(e => e.GetString()).ToList();
             return _faker.PickRandom(values);
         }
 
-        // Check for format
         if (propertySchema.TryGetProperty("format", out var formatElement))
         {
             var format = formatElement.GetString();
@@ -100,11 +95,8 @@ public class AutoBogusSeeder
     }
 
     private object? GenerateByFieldName(string fieldName, string jsonType)
-    {
-        // Smart mapping based on field name
-        return fieldName switch
+        => fieldName switch
         {
-            // Person fields
             "firstname" or "first_name" or "givenname" => _faker.Name.FirstName(),
             "lastname" or "last_name" or "familyname" or "surname" => _faker.Name.LastName(),
             "fullname" or "full_name" or "displayname" => _faker.Name.FullName(),
@@ -116,8 +108,7 @@ public class AutoBogusSeeder
             "gender" or "sex" => _faker.PickRandom(new[] { "Male", "Female", "Other" }),
             "birthdate" or "birth_date" or "dateofbirth" or "dob" => _faker.Date.Past(50, DateTime.Now.AddYears(-18)).ToString("yyyy-MM-dd"),
             "avatar" or "picture" or "photo" => _faker.Internet.Avatar(),
-            
-            // Address fields
+
             "address" or "streetaddress" or "street_address" or "street" => _faker.Address.StreetAddress(),
             "city" => _faker.Address.City(),
             "state" or "province" or "region" => _faker.Address.State(),
@@ -126,13 +117,11 @@ public class AutoBogusSeeder
             "zipcode" or "zip_code" or "postalcode" or "postal_code" or "zip" => _faker.Address.ZipCode(),
             "latitude" or "lat" => _faker.Address.Latitude(),
             "longitude" or "lng" or "lon" => _faker.Address.Longitude(),
-            
-            // Company/Business fields
+
             "company" or "companyname" or "company_name" or "organization" => _faker.Company.CompanyName(),
             "department" => _faker.Commerce.Department(),
             "jobtitle" or "job_title" or "position" or "title" when jsonType == "string" => _faker.Name.JobTitle(),
-            
-            // Product/Commerce fields
+
             "productname" or "product_name" => _faker.Commerce.ProductName(),
             "price" or "amount" or "cost" or "total" or "totalamount" or "total_amount" => _faker.Finance.Amount(1, 1000),
             "category" => _faker.Commerce.Categories(1).First(),
@@ -140,33 +129,27 @@ public class AutoBogusSeeder
             "color" or "colour" => _faker.Commerce.Color(),
             "material" => _faker.Commerce.ProductMaterial(),
             "quantity" or "qty" or "count" or "stock" or "stockquantity" or "stock_quantity" => _faker.Random.Int(1, 100),
-            
-            // Internet fields
+
             "url" or "website" or "link" or "homepage" => _faker.Internet.Url(),
             "imageurl" or "image_url" or "image" or "thumbnail" => _faker.Image.PicsumUrl(),
             "ip" or "ipaddress" or "ip_address" => _faker.Internet.Ip(),
             "domain" or "domainname" => _faker.Internet.DomainName(),
-            
-            // Content fields
+
             "description" or "bio" or "about" or "summary" => _faker.Lorem.Sentence(10),
             "content" or "body" or "text" => _faker.Lorem.Paragraph(),
             "comment" or "note" or "notes" => _faker.Lorem.Sentence(),
             "headline" or "tagline" or "slogan" => _faker.Company.CatchPhrase(),
-            
-            // ID fields
+
             "id" or "customerid" or "customer_id" or "userid" or "user_id" or "orderid" or "order_id" => Guid.NewGuid().ToString(),
-            
-            // Date/Time fields
+
             "createdat" or "created_at" or "createddate" or "created_date" => _faker.Date.Past().ToString("o"),
             "updatedat" or "updated_at" or "modifiedat" or "modified_at" => _faker.Date.Recent().ToString("o"),
             "date" => _faker.Date.Past().ToString("yyyy-MM-dd"),
-            
-            // Status fields
+
             "status" => _faker.PickRandom(new[] { "active", "inactive", "pending" }),
             "isactive" or "is_active" or "active" or "enabled" => _faker.Random.Bool(),
             "verified" or "isverified" or "is_verified" or "confirmed" => _faker.Random.Bool(),
-            
-            // Fallback by type
+
             _ => jsonType switch
             {
                 "string" => _faker.Lorem.Word(),
@@ -177,5 +160,4 @@ public class AutoBogusSeeder
                 _ => _faker.Lorem.Word()
             }
         };
-    }
 }

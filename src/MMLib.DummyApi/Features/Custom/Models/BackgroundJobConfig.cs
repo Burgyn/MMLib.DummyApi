@@ -6,7 +6,7 @@ public record BackgroundJobConfig
     /// Path to the field to update (e.g., "status", "calculatedTotal")
     /// </summary>
     public string FieldPath { get; init; } = string.Empty;
-    
+
     /// <summary>
     /// Operation to perform:
     /// - sequence:val1,val2,val3 - cycles through values
@@ -16,7 +16,7 @@ public record BackgroundJobConfig
     /// - random:min,max - random number
     /// </summary>
     public string Operation { get; init; } = string.Empty;
-    
+
     /// <summary>
     /// Delay in milliseconds before executing the job
     /// </summary>

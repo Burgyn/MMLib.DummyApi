@@ -1,9 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
 using MMLib.DummyApi.Configuration;
 using MMLib.DummyApi.Features.Custom;
 using MMLib.DummyApi.Features.Performance;
 using MMLib.DummyApi.Features.System;
 using MMLib.DummyApi.Infrastructure;
-using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);

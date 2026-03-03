@@ -6,6 +6,9 @@ using MMLib.DummyApi.Configuration;
 
 namespace MMLib.DummyApi.Infrastructure;
 
+/// <summary>
+/// Authentication handler that validates requests using an API key header.
+/// </summary>
 public class ApiKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -15,6 +18,7 @@ public class ApiKeyAuthenticationHandler(
 {
     private readonly DummyApiOptions _options = dummyApiOptions.Value;
 
+    /// <inheritdoc/>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue("X-Api-Key", out var apiKeyHeaderValues))
@@ -29,11 +33,11 @@ public class ApiKeyAuthenticationHandler(
             return Task.FromResult(AuthenticateResult.Fail("Invalid API Key"));
         }
 
-        var claims = new[]
-        {
+        Claim[] claims =
+        [
             new Claim(ClaimTypes.NameIdentifier, "api-user"),
             new Claim(ClaimTypes.Name, "API User")
-        };
+        ];
 
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var principal = new ClaimsPrincipal(identity);

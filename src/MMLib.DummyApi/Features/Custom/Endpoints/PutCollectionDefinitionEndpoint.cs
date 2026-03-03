@@ -1,19 +1,23 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using MMLib.DummyApi.Features.Custom.Models;
-using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
+/// <summary>
+/// Endpoint for updating a collection definition.
+/// </summary>
 public static class PutCollectionDefinitionEndpoint
 {
+    /// <summary>
+    /// Maps the PUT /_definitions/{name} endpoint.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static RouteHandlerBuilder MapPutCollectionDefinition(this IEndpointRouteBuilder app)
-    {
-        return app.MapPut("/_definitions/{name}", Handle)
+        => app.MapPut("/_definitions/{name}", Handle)
             .WithName("UpdateCollectionDefinition")
             .WithSummary("Update a collection definition (does not affect existing data)");
-    }
 
-    private static HttpResults.Results<Ok<CollectionDefinition>, NotFound<object>, BadRequest<object>> Handle(
+    private static Results<Ok<CollectionDefinition>, NotFound<object>, BadRequest<object>> Handle(
         string name,
         CollectionDefinition definition,
         CustomDataStore dataStore)
@@ -23,7 +27,6 @@ public static class PutCollectionDefinitionEndpoint
             return TypedResults.NotFound<object>(new { error = $"Collection '{name}' not found" });
         }
 
-        // Ensure name matches
         var updatedDefinition = definition with { Name = name };
         dataStore.SaveDefinition(updatedDefinition);
 

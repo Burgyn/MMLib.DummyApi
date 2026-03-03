@@ -2,19 +2,19 @@ using System.Collections.Concurrent;
 
 namespace MMLib.DummyApi.Infrastructure;
 
-public class SimulationMiddleware
+/// <summary>
+/// Middleware that simulates various failure and latency scenarios based on request headers.
+/// </summary>
+public class SimulationMiddleware(RequestDelegate next)
 {
-    private readonly RequestDelegate _next;
     private readonly ConcurrentDictionary<string, RetryState> _retryStates = new();
 
-    public SimulationMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-
+    /// <summary>
+    /// Processes the HTTP request and applies configured simulations before passing to the next middleware.
+    /// </summary>
+    /// <param name="context">The current HTTP context.</param>
     public async Task InvokeAsync(HttpContext context)
     {
-        // X-Simulate-Error: true - always return 500
         if (context.Request.Headers.TryGetValue("X-Simulate-Error", out var simulateError) &&
             bool.TryParse(simulateError, out var shouldError) && shouldError)
         {
@@ -23,7 +23,6 @@ public class SimulationMiddleware
             return;
         }
 
-        // X-Simulate-Retry: N - first N-1 requests return 500
         if (context.Request.Headers.TryGetValue("X-Simulate-Retry", out var retryHeader) &&
             int.TryParse(retryHeader, out var retryCount) && retryCount > 0)
         {
@@ -45,11 +44,9 @@ public class SimulationMiddleware
                 return;
             }
 
-            // Last attempt - remove state and continue
             _retryStates.TryRemove(key, out _);
         }
 
-        // X-Chaos-FailureRate: 0.3 - 30% chance of 500
         if (context.Request.Headers.TryGetValue("X-Chaos-FailureRate", out var failureRateHeader) &&
             double.TryParse(failureRateHeader, out var failureRate) && failureRate > 0)
         {
@@ -62,14 +59,12 @@ public class SimulationMiddleware
             }
         }
 
-        // X-Simulate-Delay: 500 - delay response
         if (context.Request.Headers.TryGetValue("X-Simulate-Delay", out var delayHeader) &&
             int.TryParse(delayHeader, out var delayMs) && delayMs > 0)
         {
             await Task.Delay(delayMs, context.RequestAborted);
         }
 
-        // X-Chaos-LatencyRange: 100-500 - random delay in range
         if (context.Request.Headers.TryGetValue("X-Chaos-LatencyRange", out var latencyRangeHeader))
         {
             var range = latencyRangeHeader.ToString();
@@ -84,25 +79,35 @@ public class SimulationMiddleware
             }
         }
 
-        await _next(context);
+        await next(context);
     }
 }
 
-public class RetryState
+/// <summary>
+/// Tracks the retry attempt state for a specific request.
+/// </summary>
+public class RetryState(int maxRetries)
 {
+    /// <summary>
+    /// Number of attempts made so far.
+    /// </summary>
     public int AttemptCount { get; set; }
-    public int MaxRetries { get; }
 
-    public RetryState(int maxRetries)
-    {
-        MaxRetries = maxRetries;
-    }
+    /// <summary>
+    /// Maximum number of retries configured for this request.
+    /// </summary>
+    public int MaxRetries { get; } = maxRetries;
 }
 
+/// <summary>
+/// Extension methods for registering <see cref="SimulationMiddleware"/>.
+/// </summary>
 public static class SimulationMiddlewareExtensions
 {
+    /// <summary>
+    /// Adds <see cref="SimulationMiddleware"/> to the application pipeline.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
     public static IApplicationBuilder UseSimulation(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<SimulationMiddleware>();
-    }
+        => app.UseMiddleware<SimulationMiddleware>();
 }

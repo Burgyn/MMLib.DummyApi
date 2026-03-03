@@ -1,19 +1,23 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using MMLib.DummyApi.Features.Custom.Models;
-using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
+/// <summary>
+/// Endpoint for creating a new collection definition.
+/// </summary>
 public static class PostCollectionDefinitionEndpoint
 {
+    /// <summary>
+    /// Maps the POST /_definitions endpoint.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static RouteHandlerBuilder MapPostCollectionDefinition(this IEndpointRouteBuilder app)
-    {
-        return app.MapPost("/_definitions", Handle)
+        => app.MapPost("/_definitions", Handle)
             .WithName("CreateCollectionDefinition")
             .WithSummary("Create a new collection with definition");
-    }
 
-    private static HttpResults.Results<Created<CollectionDefinition>, BadRequest<object>, Conflict<object>> Handle(
+    private static Results<Created<CollectionDefinition>, BadRequest<object>, Conflict<object>> Handle(
         CollectionDefinition definition,
         CustomDataStore dataStore,
         AutoBogusSeeder seeder)
@@ -28,10 +32,8 @@ public static class PostCollectionDefinitionEndpoint
             return TypedResults.Conflict<object>(new { error = $"Collection '{definition.Name}' already exists" });
         }
 
-        // Save definition
         dataStore.SaveDefinition(definition);
 
-        // Seed data if requested
         if (definition.SeedCount > 0)
         {
             var items = seeder.Generate(definition.Schema, definition.SeedCount);

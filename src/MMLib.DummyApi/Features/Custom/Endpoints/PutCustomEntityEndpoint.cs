@@ -1,32 +1,34 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
-using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
+/// <summary>
+/// Endpoint for updating an entity in a collection.
+/// </summary>
 public static class PutCustomEntityEndpoint
 {
+    /// <summary>
+    /// Maps the PUT /{collection}/{id} endpoint.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static RouteHandlerBuilder MapPutCustomEntity(this IEndpointRouteBuilder app)
-    {
-        return app.MapPut("/{collection}/{id:guid}", Handle)
+        => app.MapPut("/{collection}/{id:guid}", Handle)
             .WithName("UpdateCustomEntity")
             .WithSummary("Update an entity in a collection");
-    }
 
-    private static HttpResults.Results<Ok<JsonElement>, NotFound<object>, BadRequest<object>, UnauthorizedHttpResult> Handle(
+    private static Results<Ok<JsonElement>, NotFound<object>, BadRequest<object>, UnauthorizedHttpResult> Handle(
         string collection,
         Guid id,
         JsonElement data,
         CustomCollectionService service,
         HttpContext httpContext)
     {
-        // Check if collection exists
         if (!service.CollectionExists(collection))
         {
             return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
         }
 
-        // Check auth if required
         if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
         {
             return TypedResults.Unauthorized();

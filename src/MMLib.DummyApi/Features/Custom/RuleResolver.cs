@@ -4,14 +4,18 @@ using MMLib.DummyApi.Features.Custom.Models;
 namespace MMLib.DummyApi.Features.Custom;
 
 /// <summary>
-/// Resolves rules for requests and returns matching responses
+/// Resolves rules for requests and returns matching responses.
 /// </summary>
 public class RuleResolver
 {
     /// <summary>
-    /// Try to match a request against collection rules
-    /// Returns the matching rule response if found, null otherwise (fall back to CRUD)
+    /// Tries to match a request against collection rules.
+    /// Returns the matching rule response if found, or <c>null</c> to fall back to CRUD.
     /// </summary>
+    /// <param name="rules">The list of rules to evaluate.</param>
+    /// <param name="httpMethod">The HTTP method of the request.</param>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <param name="requestBody">The optional request body.</param>
     public RuleResponse? TryMatchRule(
         List<ResponseRule>? rules,
         string httpMethod,
@@ -21,16 +25,13 @@ public class RuleResolver
         if (rules == null || rules.Count == 0)
             return null;
 
-        // Sort rules by priority
         var sortedRules = rules.OrderBy(r => r.Priority).ToList();
 
         foreach (var rule in sortedRules)
         {
-            // Check method match
             if (rule.Method != "*" && !rule.Method.Equals(httpMethod, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            // Check all conditions
             var allConditionsMatch = true;
             foreach (var condition in rule.When)
             {
@@ -53,7 +54,7 @@ public class RuleResolver
     private bool EvaluateCondition(RuleCondition condition, HttpContext httpContext, JsonElement? requestBody)
     {
         var value = GetValueFromSource(condition.Source, condition.Field, httpContext, requestBody);
-        
+
         if (value == null)
         {
             return condition.Operator == "notExists";
@@ -75,8 +76,7 @@ public class RuleResolver
     }
 
     private string? GetValueFromSource(string source, string field, HttpContext httpContext, JsonElement? requestBody)
-    {
-        return source.ToLowerInvariant() switch
+        => source.ToLowerInvariant() switch
         {
             "query" => httpContext.Request.Query.TryGetValue(field, out var queryValue) ? queryValue.ToString() : null,
             "header" => httpContext.Request.Headers.TryGetValue(field, out var headerValue) ? headerValue.ToString() : null,
@@ -84,7 +84,6 @@ public class RuleResolver
             "body" => GetJsonValue(requestBody, field),
             _ => null
         };
-    }
 
     private string? GetPathValue(HttpContext httpContext, string field)
     {

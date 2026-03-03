@@ -1,15 +1,22 @@
-using System.Text.Json;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Options;
 using MMLib.DummyApi.Configuration;
 using MMLib.DummyApi.Features.Custom.Endpoints;
 using MMLib.DummyApi.Features.Custom.Models;
 using MMLib.DummyApi.Features.Custom.OpenApi;
-using Microsoft.AspNetCore.OpenApi;
-using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace MMLib.DummyApi.Features.Custom;
 
+/// <summary>
+/// Registration and mapping helpers for the Custom Collections feature.
+/// </summary>
 public static class Setup
 {
+    /// <summary>
+    /// Registers Custom Collections feature services.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
     public static IServiceCollection AddCustomCollections(this IServiceCollection services)
     {
         services.AddSingleton<CustomDataStore>();
@@ -17,13 +24,14 @@ public static class Setup
         services.AddSingleton<AutoBogusSeeder>();
         services.AddSingleton<RuleResolver>();
         services.AddScoped<CustomCollectionService>();
-        
+
         return services;
     }
 
     /// <summary>
-    /// Register OpenAPI transformers for custom collections
+    /// Registers OpenAPI transformers for custom collections.
     /// </summary>
+    /// <param name="options">The OpenAPI options to configure.</param>
     public static OpenApiOptions AddCollectionOpenApiTransformers(this OpenApiOptions options)
     {
         options.AddDocumentTransformer<CollectionOpenApiTransformer>();
@@ -31,34 +39,36 @@ public static class Setup
         return options;
     }
 
+    /// <summary>
+    /// Maps all Custom Collections management endpoints under /custom.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
     public static IEndpointRouteBuilder MapCustomCollections(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/custom")
             .WithTags("Custom Collections");
 
-        // Collection list
         group.MapGetCollections();
 
-        // Collection definitions management
         group.MapGetCollectionDefinitions();
         group.MapGetCollectionDefinition();
         group.MapPostCollectionDefinition();
         group.MapPutCollectionDefinition();
         group.MapDeleteCollectionDefinition();
 
-        // CRUD endpoints for entities (generic fallback)
         group.MapGetCustomCollection();
         group.MapGetCustomEntity();
         group.MapPostCustomEntity();
         group.MapPutCustomEntity();
         group.MapDeleteCustomEntity();
-        
+
         return app;
     }
 
     /// <summary>
-    /// Load collections from file and map dynamic endpoints
+    /// Loads collections from the configured file and maps their dynamic endpoints.
     /// </summary>
+    /// <param name="app">The web application.</param>
     public static WebApplication LoadAndMapCollections(this WebApplication app)
     {
         var dataStore = app.Services.GetRequiredService<CustomDataStore>();
@@ -67,7 +77,6 @@ public static class Setup
         var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger("MMLib.DummyApi.Features.Custom");
 
-        // Get file path
         var filePath = options.CollectionsFile;
         if (string.IsNullOrEmpty(filePath))
         {
@@ -78,20 +87,18 @@ public static class Setup
         {
             logger.LogInformation("Loading collections from {FilePath}", filePath);
             var json = File.ReadAllText(filePath);
-            var collectionsFile = JsonSerializer.Deserialize<CollectionsFile>(json, 
+            var collectionsFile = JsonSerializer.Deserialize<CollectionsFile>(json,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            
+
             if (collectionsFile?.Collections != null)
             {
                 foreach (var definition in collectionsFile.Collections)
                 {
-                    logger.LogInformation("Loading collection '{Name}' with seedCount={SeedCount}", 
+                    logger.LogInformation("Loading collection '{Name}' with seedCount={SeedCount}",
                         definition.Name, definition.SeedCount);
-                    
-                    // Save definition
+
                     dataStore.SaveDefinition(definition);
-                    
-                    // Seed data if requested
+
                     if (definition.SeedCount > 0)
                     {
                         var items = seeder.Generate(definition.Schema, definition.SeedCount);
@@ -101,8 +108,7 @@ public static class Setup
                         }
                         logger.LogInformation("Seeded {Count} items for collection '{Name}'", items.Count, definition.Name);
                     }
-                    
-                    // Map dynamic endpoints for this collection
+
                     logger.LogInformation("Mapping endpoints for collection '{Name}'", definition.Name);
                     app.MapCollectionEndpoints(definition);
                 }

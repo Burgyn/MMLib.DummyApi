@@ -1,35 +1,43 @@
 using System.Collections.Concurrent;
 using LiteDB;
+using Microsoft.Extensions.Options;
 using MMLib.DummyApi.Configuration;
 using MMLib.DummyApi.Features.Custom;
 using MMLib.DummyApi.Features.Custom.Models;
-using Microsoft.Extensions.Options;
 
 namespace MMLib.DummyApi.Infrastructure;
 
+/// <summary>
+/// Hosted service that processes scheduled background jobs for collection entities.
+/// </summary>
 public class BackgroundJobService(IServiceProvider serviceProvider)
     : IHostedService, IDisposable
 {
     private readonly ConcurrentDictionary<(string Collection, Guid Id), CustomJobStatus> _customJobs = new();
     private Timer? _timer;
 
+    /// <inheritdoc/>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _timer = new Timer(ProcessJobs, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _timer?.Change(Timeout.Infinite, 0);
         return Task.CompletedTask;
     }
 
-    private void ProcessJobs(object? state)
-    {
-        ProcessCustomJobs();
-    }
+    private void ProcessJobs(object? state) => ProcessCustomJobs();
 
+    /// <summary>
+    /// Schedules a background job to run after the specified delay for a given entity.
+    /// </summary>
+    /// <param name="collection">The collection name.</param>
+    /// <param name="entityId">The entity identifier.</param>
+    /// <param name="delayMs">Delay in milliseconds before the job executes.</param>
     public void ScheduleCustomJob(string collection, Guid entityId, int delayMs)
     {
         var completedAt = DateTime.UtcNow.AddMilliseconds(delayMs);
@@ -39,7 +47,7 @@ public class BackgroundJobService(IServiceProvider serviceProvider)
     private void ProcessCustomJobs()
     {
         var now = DateTime.UtcNow;
-        var completedJobs = new List<(string Collection, Guid Id)>();
+        List<(string Collection, Guid Id)> completedJobs = [];
 
         foreach (var (key, job) in _customJobs)
         {
@@ -58,7 +66,6 @@ public class BackgroundJobService(IServiceProvider serviceProvider)
                     {
                         dataStore.UpdateEntityData(key.Collection, key.Id, newData);
 
-                        // For sequence operations, schedule next step if not complete
                         if (config.Operation.StartsWith("sequence:"))
                         {
                             var values = config.Operation.Substring(9).Split(',');
@@ -67,7 +74,7 @@ public class BackgroundJobService(IServiceProvider serviceProvider)
                             {
                                 var newCompletedAt = DateTime.UtcNow.AddMilliseconds(config.DelayMs);
                                 _customJobs[(key.Collection, key.Id)] = new CustomJobStatus(newCompletedAt, key.Collection, nextIndex);
-                                continue; // Don't remove this job yet
+                                continue;
                             }
                         }
                     }
@@ -95,7 +102,6 @@ public class BackgroundJobService(IServiceProvider serviceProvider)
                 if (sequenceIndex < values.Length)
                 {
                     var strValue = values[sequenceIndex].Trim();
-                    // Try to parse as bool, int, or keep as string
                     if (bool.TryParse(strValue, out var boolVal))
                         newValue = boolVal;
                     else if (int.TryParse(strValue, out var intVal))
@@ -190,10 +196,11 @@ public class BackgroundJobService(IServiceProvider serviceProvider)
         current[parts.Last()] = value;
     }
 
-    public void Dispose()
-    {
-        _timer?.Dispose();
-    }
+    /// <inheritdoc/>
+    public void Dispose() => _timer?.Dispose();
 }
 
+/// <summary>
+/// Represents the current status of a scheduled background job.
+/// </summary>
 public record CustomJobStatus(DateTime CompletedAt, string Collection, int SequenceIndex);
