@@ -1,0 +1,22 @@
+### Create entity to trigger background job sequence (new -> processing -> done)
+# @name CreateEntityForBgJobRequest
+## TEST-EXPECT-STATUS: [201]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/custom/ruletests
+Content-Type: application/json
+X-Background-Delay: 100
+
+{
+    "name": "Background Job Test Entity"
+}
+
+###
+
+### Poll entity until status reaches 'done' via background job sequence
+# @name PollEntityStatusDoneRequest
+## RETRY-UNTIL-TEST-PASS: Status should be done
+## RETRY-MAX-ATTEMPTS: 30
+## RETRY-BACKOFF-TYPE: Constant
+## RETRY-MAX-DELAY: 00:00:01
+GET {{ApiBaseUrl}}/custom/ruletests/{{CreateEntityForBgJobRequest.response.body.$.id}}
+Accept: application/json

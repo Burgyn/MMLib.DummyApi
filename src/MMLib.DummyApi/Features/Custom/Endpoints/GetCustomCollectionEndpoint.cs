@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
@@ -17,22 +16,30 @@ public static class GetCustomCollectionEndpoint
             .WithName("GetCustomCollection")
             .WithSummary("Get all entities in a collection");
 
-    private static Results<Ok<IEnumerable<JsonElement>>, NotFound<object>, UnauthorizedHttpResult> Handle(
+    private static IResult Handle(
         string collection,
         CustomCollectionService service,
+        RuleResolver ruleResolver,
         HttpContext httpContext)
     {
         if (!service.CollectionExists(collection))
         {
-            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
+            return Results.NotFound(new { error = $"Collection '{collection}' not found" });
         }
 
         if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
         {
-            return TypedResults.Unauthorized();
+            return Results.Unauthorized();
         }
 
-        var entities = service.GetAll(collection);
-        return TypedResults.Ok(entities);
+        List<Models.ResponseRule>? rules = service.GetRules(collection);
+        Models.RuleResponse? ruleResponse = ruleResolver.TryMatchRule(rules, "GET", httpContext);
+        if (ruleResponse != null)
+        {
+            return DynamicEndpointMapper.ApplyRuleResponse(ruleResponse, httpContext);
+        }
+
+        IEnumerable<JsonElement> entities = service.GetAll(collection);
+        return Results.Ok(entities);
     }
 }

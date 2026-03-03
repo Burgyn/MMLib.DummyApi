@@ -1,0 +1,6 @@
+### No matching rule - should fall back to normal CRUD (empty collection)
+# @name RuleNoMatchFallbackRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/ruletests
+Accept: application/json

@@ -198,7 +198,7 @@ public static class DynamicEndpointMapper
         }
     }
 
-    private static IResult ApplyRuleResponse(RuleResponse response, HttpContext httpContext)
+    internal static IResult ApplyRuleResponse(RuleResponse response, HttpContext httpContext)
     {
         if (response.Headers != null)
         {

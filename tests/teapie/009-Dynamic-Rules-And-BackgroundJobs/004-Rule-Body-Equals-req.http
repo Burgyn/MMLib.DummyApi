@@ -1,0 +1,11 @@
+### Rule: body equals - type=blocked on POST triggers 403
+# @name RuleBodyEqualsRequest
+## TEST-EXPECT-STATUS: [403]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/custom/ruletests
+Content-Type: application/json
+
+{
+    "type": "blocked",
+    "name": "Should not be created"
+}

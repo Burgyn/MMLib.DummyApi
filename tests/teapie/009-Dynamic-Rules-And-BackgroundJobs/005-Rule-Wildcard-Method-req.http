@@ -1,0 +1,10 @@
+### Rule: wildcard method - price>1000 on any method triggers 400
+# @name RuleWildcardMethodRequest
+## TEST-EXPECT-STATUS: [400]
+## TEST-HAS-BODY
+POST {{ApiBaseUrl}}/custom/ruletests?price=2000
+Content-Type: application/json
+
+{
+    "name": "Expensive item"
+}

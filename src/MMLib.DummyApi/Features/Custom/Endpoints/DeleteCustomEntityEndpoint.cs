@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
 /// <summary>
@@ -16,27 +14,35 @@ public static class DeleteCustomEntityEndpoint
             .WithName("DeleteCustomEntity")
             .WithSummary("Delete an entity from a collection");
 
-    private static Results<NoContent, NotFound<object>, UnauthorizedHttpResult> Handle(
+    private static IResult Handle(
         string collection,
         Guid id,
         CustomCollectionService service,
+        RuleResolver ruleResolver,
         HttpContext httpContext)
     {
         if (!service.CollectionExists(collection))
         {
-            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
+            return Results.NotFound(new { error = $"Collection '{collection}' not found" });
         }
 
         if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
         {
-            return TypedResults.Unauthorized();
+            return Results.Unauthorized();
+        }
+
+        List<Models.ResponseRule>? rules = service.GetRules(collection);
+        Models.RuleResponse? ruleResponse = ruleResolver.TryMatchRule(rules, "DELETE", httpContext);
+        if (ruleResponse != null)
+        {
+            return DynamicEndpointMapper.ApplyRuleResponse(ruleResponse, httpContext);
         }
 
         if (!service.Delete(collection, id))
         {
-            return TypedResults.NotFound<object>(new { error = $"Entity not found in collection '{collection}'" });
+            return Results.NotFound(new { error = $"Entity not found in collection '{collection}'" });
         }
 
-        return TypedResults.NoContent();
+        return Results.NoContent();
     }
 }

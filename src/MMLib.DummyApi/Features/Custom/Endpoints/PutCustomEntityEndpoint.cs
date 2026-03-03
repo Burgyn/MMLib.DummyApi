@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace MMLib.DummyApi.Features.Custom.Endpoints;
 
@@ -17,34 +16,42 @@ public static class PutCustomEntityEndpoint
             .WithName("UpdateCustomEntity")
             .WithSummary("Update an entity in a collection");
 
-    private static Results<Ok<JsonElement>, NotFound<object>, BadRequest<object>, UnauthorizedHttpResult> Handle(
+    private static IResult Handle(
         string collection,
         Guid id,
         JsonElement data,
         CustomCollectionService service,
+        RuleResolver ruleResolver,
         HttpContext httpContext)
     {
         if (!service.CollectionExists(collection))
         {
-            return TypedResults.NotFound<object>(new { error = $"Collection '{collection}' not found" });
+            return Results.NotFound(new { error = $"Collection '{collection}' not found" });
         }
 
         if (service.IsAuthRequired(collection) && !httpContext.User.Identity?.IsAuthenticated == true)
         {
-            return TypedResults.Unauthorized();
+            return Results.Unauthorized();
         }
 
-        var (entity, errors) = service.Update(collection, id, data);
+        List<Models.ResponseRule>? rules = service.GetRules(collection);
+        Models.RuleResponse? ruleResponse = ruleResolver.TryMatchRule(rules, "PUT", httpContext, data);
+        if (ruleResponse != null)
+        {
+            return DynamicEndpointMapper.ApplyRuleResponse(ruleResponse, httpContext);
+        }
+
+        (JsonElement? entity, List<string> errors) = service.Update(collection, id, data);
 
         if (entity == null)
         {
             if (errors.Any(e => e.Contains("not found")))
             {
-                return TypedResults.NotFound<object>(new { error = $"Entity not found in collection '{collection}'" });
+                return Results.NotFound(new { error = $"Entity not found in collection '{collection}'" });
             }
-            return TypedResults.BadRequest<object>(new { errors });
+            return Results.BadRequest(new { errors });
         }
 
-        return TypedResults.Ok(entity.Value);
+        return Results.Ok(entity.Value);
     }
 }

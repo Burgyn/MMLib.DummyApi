@@ -1,0 +1,6 @@
+### Rule: range - value between 10 and 50 triggers custom response
+# @name RuleRangeRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/ruletests?value=25
+Accept: application/json

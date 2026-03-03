@@ -1,0 +1,6 @@
+### Rule: query equals - status=error triggers 500
+# @name RuleQueryEqualsRequest
+## TEST-EXPECT-STATUS: [500]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/ruletests?status=error
+Accept: application/json

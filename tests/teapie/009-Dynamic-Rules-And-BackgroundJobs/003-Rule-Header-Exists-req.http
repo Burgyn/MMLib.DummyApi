@@ -1,0 +1,8 @@
+### Rule: header exists - X-Test-Mode triggers custom response with header
+# @name RuleHeaderExistsRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+## TEST-HAS-HEADER: X-Rule-Applied
+GET {{ApiBaseUrl}}/custom/ruletests
+Accept: application/json
+X-Test-Mode: anything

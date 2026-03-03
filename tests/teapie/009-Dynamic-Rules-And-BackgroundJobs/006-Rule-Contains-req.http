@@ -1,0 +1,6 @@
+### Rule: contains - name containing "test" triggers custom response
+# @name RuleContainsRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/ruletests?name=mytest
+Accept: application/json

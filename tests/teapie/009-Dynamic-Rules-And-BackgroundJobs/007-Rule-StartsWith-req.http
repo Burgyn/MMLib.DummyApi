@@ -1,0 +1,6 @@
+### Rule: startsWith - code starting with "PRE" triggers custom response
+# @name RuleStartsWithRequest
+## TEST-EXPECT-STATUS: [200]
+## TEST-HAS-BODY
+GET {{ApiBaseUrl}}/custom/ruletests?code=PREFIX123
+Accept: application/json
