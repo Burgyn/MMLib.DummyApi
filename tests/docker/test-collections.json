@@ -1,0 +1,16 @@
+{
+  "collections": [
+    {
+      "name": "books",
+      "displayName": "Books",
+      "seedCount": 3,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "author": { "type": "string" }
+        }
+      }
+    }
+  ]
+}
