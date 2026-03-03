@@ -49,3 +49,5 @@ app.MapCustomCollections();
 app.LoadAndMapCollections();
 
 app.Run();
+
+public partial class Program { }

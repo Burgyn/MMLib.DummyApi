@@ -266,7 +266,10 @@ See LICENSE file for details.
 
 ## ToDo:
 
-- [] OpenAPI dokumentacia
 - [] celkova dokumentacia
 - [] refaktor jednotlivych tried, je to bordel
 - [] filter nefunguje
+- testy na rules a bacground job
+  - dynamicky vytvorit fixture taky ze tam bude specificka kolekcia
+  - budu tam priklady na vsetky moze scenare rules aj backrground
+  - pozor na trvanie
